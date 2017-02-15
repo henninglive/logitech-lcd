@@ -5,3 +5,5 @@ authors = ["Henning Ottesen <henning@live.no>"]
 
 [target.'cfg(windows)'.dependencies]
 logi-lcd-sys = {path = "logi-lcd-sys"}
+widestring = "0.2.2"
+winapi = "0.2.8"
