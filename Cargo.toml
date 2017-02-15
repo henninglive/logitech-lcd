@@ -3,4 +3,5 @@ name = "logi-lcd"
 version = "0.1.0"
 authors = ["Henning Ottesen <henning@live.no>"]
 
-[dependencies]
+[target.'cfg(windows)'.dependencies]
+logi-lcd-sys = {path = "logi-lcd-sys"}
