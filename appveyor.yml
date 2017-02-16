@@ -1,0 +1,62 @@
+environment:
+  global:
+    PROJECT_NAME: logi-lcd
+  matrix:
+    # Stable channel
+    - TARGET: i686-pc-windows-gnu
+      CHANNEL: stable
+      DLL_TARGET: x86
+#    - TARGET: i686-pc-windows-msvc
+#      CHANNEL: stable
+    - TARGET: x86_64-pc-windows-gnu
+      CHANNEL: stable
+      DLL_TARGET: x64
+#    - TARGET: x86_64-pc-windows-msvc
+#      CHANNEL: stable
+    # Beta channel
+    - TARGET: i686-pc-windows-gnu
+      CHANNEL: beta
+      DLL_TARGET: x86
+#    - TARGET: i686-pc-windows-msvc
+#      CHANNEL: beta
+    - TARGET: x86_64-pc-windows-gnu
+      CHANNEL: beta
+      DLL_TARGET: x64
+#    - TARGET: x86_64-pc-windows-msvc
+#      CHANNEL: beta
+    # Nightly channel
+    - TARGET: i686-pc-windows-gnu
+      CHANNEL: nightly
+      DLL_TARGET: x86
+#    - TARGET: i686-pc-windows-msvc
+#      CHANNEL: nightly
+    - TARGET: x86_64-pc-windows-gnu
+      CHANNEL: nightly
+      DLL_TARGET: x64
+#    - TARGET: x86_64-pc-windows-msvc
+#      CHANNEL: nightly
+
+install:
+  - curl -sSf -o rustup-init.exe https://win.rustup.rs
+  - rustup-init.exe --default-host %TARGET% --default-toolchain %CHANNEL% -y
+  - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
+  - rustc -Vv
+  - cargo -V
+  - curl -sSf -o LCD_SDK.zip http://download01.logitech.com/web/ftp/pub/techsupport/SDK/LCDSDK_8.57.148.zip
+  - 7z -oLCD_SDK x LCD_SDK.zip
+  - copy LCD_SDK\Lib\GameEnginesWrapper\%DLL_TARGET%\LogitechLcdEnginesWrapper.dll LogitechLcd.dll
+  - echo %APPVEYOR_BUILD_FOLDER%
+  - set APPVEYOR_BUILD_FOLDER_FS=%APPVEYOR_BUILD_FOLDER:\=/%
+  - echo %APPVEYOR_BUILD_FOLDER_FS%
+  - set LOGITECH_LCD=%APPVEYOR_BUILD_FOLDER_FS%/LogitechLcd.dll
+  - echo %LOGITECH_LCD%
+
+build: false
+
+test_script:
+  - cargo build --verbose
+  - cargo build --verbose --example mono-blink
+
+branches:
+  only:
+    - master
