@@ -16,8 +16,8 @@ pub const COLOR_HEIGHT: usize = sys::COLOR_HEIGHT;
 static INITIALIZED: AtomicBool = ATOMIC_BOOL_INIT;
 
 pub struct MonoLcd;
+pub struct ColorLcd;
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ColorButton {
     ButtonLeft,
@@ -101,7 +101,7 @@ impl MonoLcd {
     /// - app_name: The name of your applet.
     ///
     /// ### Panics
-    /// Will panic if another lcd instance exits. 
+    /// Will panic if another lcd instance exits.
     ///
     pub fn connect(app_name: &str) -> Result<MonoLcd, LcdError> {
         assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
@@ -204,7 +204,123 @@ impl MonoLcd {
     }
 }
 
+impl ColorLcd {
+    /// Initialize and connect to a color lcd device.
+    ///
+    /// ### Parameters:
+    /// - app_name: The name of your applet.
+    ///
+    /// ### Panics
+    /// Will panic if another lcd instance exits.
+    ///
+    pub fn connect(app_name: &str) -> Result<ColorLcd, LcdError> {
+        assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
+
+        let ws = WideCString::from_str(app_name).unwrap();
+        let ret = unsafe {
+            match LogiLcdInit(ws.as_ptr(), LcdType::COLOR) {
+                Bool::TRUE => {
+                    match LogiLcdIsConnected(LcdType::COLOR) {
+                        Bool::TRUE => Ok(ColorLcd),
+                        Bool::FALSE => Err(LcdError::NotConnected),
+                    }
+                },
+                Bool::FALSE => Err(LcdError::Initialization),
+            }
+        };
+        if ret.is_err() {
+            INITIALIZED.store(false, Ordering::SeqCst);
+        }
+        ret
+    }
+
+    /// Checks if the device is connected.
+    ///
+    /// ### Return value:
+    /// If a device supporting the lcd type specified is found, it returns `true`. Otherwise `false`
+    ///
+    pub fn is_connected() -> bool {
+        unsafe {
+            LogiLcdIsConnected(LcdType::COLOR).into()
+        }
+    }
+
+    /// Checks if the button specified by the parameter is being pressed.
+    ///
+    /// ### Return value:
+    /// If the button specified is being pressed it returns `true`. Otherwise `false`
+    ///
+    /// ### Notes:
+    /// The button will be considered pressed only if your applet is the one currently in the foreground.
+    ///
+    pub fn is_button_pressed(&self, button: ColorButton) -> bool {
+        unsafe {
+            LogiLcdIsButtonPressed(button.lcd_button()).into()
+        }
+    }
+
+    /// Updates the lcd display.
+    ///
+    /// ### Notes:
+    /// You have to call this function every frame of your main loop, to keep the lcd updated.
+    ///
+    pub fn update(&mut self) {
+        unsafe {
+            LogiLcdUpdate();
+        }
+    }
+
+    pub fn set_background(&mut self, bitmap: &[u8]) -> Result<(), LcdError> {
+        assert_eq!(bitmap.len(), COLOR_WIDTH * COLOR_HEIGHT * 4);
+        unsafe {
+            match LogiLcdColorSetBackground(bitmap.as_ptr()) {
+                Bool::TRUE  => Ok(()),
+                Bool::FALSE => Err(LcdError::ColorBackground),
+            }
+        }
+    }
+
+    pub fn set_title(&mut self, text: &str, red: u8, green: u8, blue: u8)
+        -> Result<(), LcdError>
+    {
+        let ws = WideCString::from_str(text).unwrap();
+        unsafe {
+            match LogiLcdColorSetTitle(ws.as_ptr(), red as i32,
+                green as i32, blue as i32)
+            {
+                Bool::TRUE  => Ok(()),
+                Bool::FALSE => Err(LcdError::ColorTitle),
+            }
+        }
+    }
+
+    pub fn set_text(&mut self, line_number: usize, text: &str,
+        red: u8, green: u8, blue: u8) -> Result<(), LcdError>
+    {
+        let ws = WideCString::from_str(text).unwrap();
+        assert!(line_number < 4);
+        unsafe {
+            match LogiLcdColorSetText(line_number as i32,
+                ws.as_ptr(), red as i32, green as i32, blue as i32)
+            {
+                Bool::TRUE  => Ok(()),
+                Bool::FALSE => Err(LcdError::ColorText),
+            }
+        }
+    }
+}
+
 impl Drop for MonoLcd {
+    /// Kills the applet and frees memory used by the SDK
+    fn drop(&mut self) {
+        unsafe {
+            LogiLcdShutdown();
+        }
+        INITIALIZED.store(false, Ordering::SeqCst);
+    }
+}
+
+impl Drop for ColorLcd {
     /// Kills the applet and frees memory used by the SDK
     fn drop(&mut self) {
         unsafe {
