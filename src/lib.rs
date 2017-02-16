@@ -210,5 +210,6 @@ impl Drop for MonoLcd {
         unsafe {
             LogiLcdShutdown();
         }
+        INITIALIZED.store(false, Ordering::SeqCst);
     }
 }

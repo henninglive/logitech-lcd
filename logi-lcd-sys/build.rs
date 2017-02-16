@@ -16,7 +16,7 @@ x86 HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Classes\CLSID\{d0e790a5-01a7-49ae-ae
 fn main() {
     assert!(cfg!(all(windows, target_pointer_width = "64")), "Unsupported target platform");
 
-    // Try and find path to LogitechLcd.dll searching for its CLSID 
+    // Try and find path to LogitechLcd.dll searching for its CLSID
     // in the windows registry.
     let hkcl = RegKey::predef(HKEY_CLASSES_ROOT);
     let key = hkcl.open_subkey_with_flags(
