@@ -1,4 +1,6 @@
 # logi-lcd
+[![Build status](https://ci.appveyor.com/api/projects/status/yeblonuvclkd7n9e?svg=true)](https://ci.appveyor.com/project/henninglive/logi-lcd)
+
 FFI bindings for the Logitech Gaming LCD/Gamepanel SDK
 
 ## Overview
