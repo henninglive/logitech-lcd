@@ -46,13 +46,11 @@ fn main() {
         Err(_)  => dll_path_clsid(),
     };
 
-    println!("lib_dir_str:{:?}", lib_dir_str);
-
     let lib_path = Path::new(&lib_dir_str[..]).join("LogitechLcd.dll");
     assert!(lib_path.is_file());
     assert_eq!(lib_path.file_name().unwrap(), "LogitechLcd.dll");
 
-    if env::var("CARGO_FEATURE_COPY_TO_OUTPUT").is_ok() {
+    if env::var("LOGITECH_LCD_COPY_OUT").is_ok() {
         let out_dir_str = env::var("OUT_DIR").unwrap();
         let mut out_lib_path = PathBuf::from(out_dir_str);
 
@@ -61,7 +59,7 @@ fn main() {
         assert!(out_lib_path.pop());
 
         out_lib_path.push(lib_path.file_name().unwrap());
-        if !lib_path.exists() {
+        if !out_lib_path.exists() {
             std::fs::copy(lib_path, out_lib_path).unwrap();
         }
     }

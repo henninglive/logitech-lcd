@@ -11,6 +11,3 @@ winapi = "0.2.8"
 
 [build-dependencies]
 winreg = "0.4"
-
-[features]
-copy_to_output = []
