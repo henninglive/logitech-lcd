@@ -42,13 +42,14 @@ install:
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
   - rustc -Vv
   - cargo -V
+  - mkdir lib
   - curl -sSf -o LCD_SDK.zip http://download01.logitech.com/web/ftp/pub/techsupport/SDK/LCDSDK_8.57.148.zip
   - 7z -oLCD_SDK x LCD_SDK.zip
-  - copy LCD_SDK\Lib\GameEnginesWrapper\%DLL_TARGET%\LogitechLcdEnginesWrapper.dll LogitechLcd.dll
+  - copy LCD_SDK\Lib\GameEnginesWrapper\%DLL_TARGET%\LogitechLcdEnginesWrapper.dll lib\LogitechLcd.dll
   - echo %APPVEYOR_BUILD_FOLDER%
   - set APPVEYOR_BUILD_FOLDER_FS=%APPVEYOR_BUILD_FOLDER:\=/%
   - echo %APPVEYOR_BUILD_FOLDER_FS%
-  - set LOGITECH_LCD=%APPVEYOR_BUILD_FOLDER_FS%/LogitechLcd.dll
+  - set LOGITECH_LCD_LIB_DIR=%APPVEYOR_BUILD_FOLDER_FS%/lib
   - echo %LOGITECH_LCD%
 
 build: false
