@@ -1,7 +1,7 @@
 extern crate logi_lcd_sys as sys;
-extern crate widestring;
+extern crate winapi;
 
-use widestring::WideCString;
+use winapi::{wchar_t, c_int};
 use sys::*;
 
 use std::sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT};
@@ -46,6 +46,7 @@ pub enum LcdError {
     ColorBackground,
     ColorTitle,
     ColorText,
+    NullCharacter,
 }
 
 impl Error for LcdError {
@@ -58,6 +59,7 @@ impl Error for LcdError {
             LcdError::ColorBackground => "A FFI call to LogiLcdColorSetBackground() has failed",
             LcdError::ColorTitle      => "A FFI call to LogiLcdColorSetTitle() has failed",
             LcdError::ColorText       => "A FFI call to LogiLcdColorSetText() has failed",
+            LcdError::NullCharacter   => "Unexpected NULL character",
         }
     }
 }
@@ -94,6 +96,19 @@ impl MonoButton {
     }
 }
 
+fn str_to_wchar(s: &str) -> Result<Vec<wchar_t>, LcdError> {
+    let mut v = s.encode_utf16().collect::<Vec<wchar_t>>();
+
+    if v.iter().any(|&val| val == 0) {
+        return Err(LcdError::NullCharacter);
+    }
+
+    v.push(0);
+
+    Ok(v)
+}
+
+
 impl MonoLcd {
     /// Initialize and connect to a monochrome lcd device.
     ///
@@ -106,7 +121,8 @@ impl MonoLcd {
     pub fn connect(app_name: &str) -> Result<MonoLcd, LcdError> {
         assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
 
-        let ws = WideCString::from_str(app_name).unwrap();
+        let ws = str_to_wchar(app_name)?;
+
         let ret = unsafe {
             match LogiLcdInit(ws.as_ptr(), LcdType::MONO) {
                 Bool::TRUE => {
@@ -193,10 +209,10 @@ impl MonoLcd {
     /// Will panic if line_number larger than or equal to 4.
     ///
     pub fn set_text(&mut self, line_number: usize, text: &str) -> Result<(), LcdError> {
-        let ws = WideCString::from_str(text).unwrap();
+        let ws = str_to_wchar(text)?;
         assert!(line_number < 4);
         unsafe {
-            match LogiLcdMonoSetText(line_number as i32, ws.as_ptr()) {
+            match LogiLcdMonoSetText(line_number as c_int, ws.as_ptr()) {
                 Bool::TRUE  => Ok(()),
                 Bool::FALSE => Err(LcdError::MonoText),
             }
@@ -216,7 +232,8 @@ impl ColorLcd {
     pub fn connect(app_name: &str) -> Result<ColorLcd, LcdError> {
         assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
 
-        let ws = WideCString::from_str(app_name).unwrap();
+        let ws = str_to_wchar(app_name)?;
+
         let ret = unsafe {
             match LogiLcdInit(ws.as_ptr(), LcdType::COLOR) {
                 Bool::TRUE => {
@@ -283,10 +300,11 @@ impl ColorLcd {
     pub fn set_title(&mut self, text: &str, red: u8, green: u8, blue: u8)
         -> Result<(), LcdError>
     {
-        let ws = WideCString::from_str(text).unwrap();
+        let ws = str_to_wchar(text)?;
+
         unsafe {
-            match LogiLcdColorSetTitle(ws.as_ptr(), red as i32,
-                green as i32, blue as i32)
+            match LogiLcdColorSetTitle(ws.as_ptr(), red as c_int,
+                green as c_int, blue as c_int)
             {
                 Bool::TRUE  => Ok(()),
                 Bool::FALSE => Err(LcdError::ColorTitle),
@@ -297,11 +315,11 @@ impl ColorLcd {
     pub fn set_text(&mut self, line_number: usize, text: &str,
         red: u8, green: u8, blue: u8) -> Result<(), LcdError>
     {
-        let ws = WideCString::from_str(text).unwrap();
+        let ws = str_to_wchar(text)?;
         assert!(line_number < 4);
         unsafe {
-            match LogiLcdColorSetText(line_number as i32,
-                ws.as_ptr(), red as i32, green as i32, blue as i32)
+            match LogiLcdColorSetText(line_number as c_int,
+                ws.as_ptr(), red as c_int, green as c_int, blue as c_int)
             {
                 Bool::TRUE  => Ok(()),
                 Bool::FALSE => Err(LcdError::ColorText),
