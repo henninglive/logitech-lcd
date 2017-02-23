@@ -8,10 +8,15 @@ The Logitech LCD/GamePanel SDK introduces second screen capability that allows G
 
 ## Supported Devices
 - G19 - 320x240 Full RGBA **(Untested)**
-- G510 - 160x43 Monochrome **(Tested)**
+- G510 - 160x43 Monochrome **(Working)**
 - G13 - 160x43 Monochrome **(Untested)**
 - G15 v1 - 160x43 Monochrome **(Untested)**
 - G15 v2 - 160x43 Monochrome **(Untested)**
+- LCD emulator - 160x43 Monochrome  **(Working)**
+- LCD emulator - 320x240 Full RGBA  **(Working)**
+
+### LCD Emulator
+The Logitech Gaming Software comes with an LCD emulator. You can access it by going to your task bar tray `CTRL + SHIFT + RIGHT CLICK` on Logitech Gaming Software tray icon and press "LCD Emulator"
 
 ## Building
 ### Requirements
