@@ -1,40 +1,55 @@
 extern crate logi_lcd_sys as sys;
-extern crate winapi;
+extern crate enumflags;
+#[macro_use] extern crate enumflags_derive;
 
-use winapi::{wchar_t, c_int};
 use sys::*;
+use enumflags::{BitFlags, InnerBitFlags};
 
+use std::os::raw::c_int;
 use std::sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-pub const MONO_WIDTH: usize   = sys::MONO_WIDTH;
-pub const MONO_HEIGHT: usize  = sys::MONO_HEIGHT;
-pub const COLOR_WIDTH: usize  = sys::COLOR_WIDTH;
-pub const COLOR_HEIGHT: usize = sys::COLOR_HEIGHT;
+pub const MONO_WIDTH: usize   = sys::LOGI_LCD_MONO_WIDTH;
+pub const MONO_HEIGHT: usize  = sys::LOGI_LCD_MONO_HEIGHT;
+pub const MONO_BYTES_PER_PIXEL: usize = sys::LOGI_LCD_MONO_PXL_BSIZE;
+
+pub const COLOR_WIDTH: usize  = sys::LOGI_LCD_COLOR_WIDTH;
+pub const COLOR_HEIGHT: usize = sys::LOGI_LCD_COLOR_HEIGHT;
+pub const COLOR_BYTES_PER_PIXEL: usize = sys::LOGI_LCD_COLOR_PXL_BSIZE;
+
 
 static INITIALIZED: AtomicBool = ATOMIC_BOOL_INIT;
 
 pub struct MonoLcd;
 pub struct ColorLcd;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum ColorButton {
-    ButtonLeft,
-    ButtonRight,
-    ButtonOk,
-    ButtonCancel,
-    ButtonUp,
-    ButtonDown,
-    BttonMenu,
+#[repr(u32)]
+#[derive(EnumFlags, Copy, Clone, Debug)]
+enum LcdType {
+    Mono  = 0x00000001,
+    Color = 0x00000002,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[repr(u32)]
+#[derive(EnumFlags, Copy, Clone, Debug)]
 pub enum MonoButton {
-    Button0,
-    Button1,
-    Button2,
-    Button3,
+    Button0      = 0x00000001,
+    Button1      = 0x00000002,
+    Button2      = 0x00000004,
+    Button3      = 0x00000008,
+}
+
+#[repr(u32)]
+#[derive(EnumFlags, Copy, Clone, Debug)]
+pub enum ColorButton {
+    ButtonLeft   = 0x00000001,
+    ButtonRight  = 0x00000002,
+    ButtonOk     = 0x00000004,
+    ButtonCancel = 0x00000008,
+    ButtonUp     = 0x00000010,
+    ButtonDown   = 0x00000020,
+    BttonMenu    = 0x00000040,
 }
 
 #[derive(Debug)]
@@ -70,34 +85,8 @@ impl Display for LcdError {
     }
 }
 
-impl ColorButton {
-    #[allow(dead_code)]
-    fn lcd_button(self) -> LcdButton {
-        match self {
-            ColorButton::ButtonLeft   => LcdButton::COLOR_BUTTON_LEFT,
-            ColorButton::ButtonRight  => LcdButton::COLOR_BUTTON_RIGHT,
-            ColorButton::ButtonOk     => LcdButton::COLOR_BUTTON_OK,
-            ColorButton::ButtonCancel => LcdButton::COLOR_BUTTON_CANCEL,
-            ColorButton::ButtonUp     => LcdButton::COLOR_BUTTON_UP,
-            ColorButton::ButtonDown   => LcdButton::COLOR_BUTTON_DOWN,
-            ColorButton::BttonMenu    => LcdButton::COLOR_BUTTON_MENU,
-        }
-    }
-}
-
-impl MonoButton {
-    fn lcd_button(self) -> LcdButton {
-        match self {
-            MonoButton::Button0 => LcdButton::MONO_BUTTON_0,
-            MonoButton::Button1 => LcdButton::MONO_BUTTON_1,
-            MonoButton::Button2 => LcdButton::MONO_BUTTON_2,
-            MonoButton::Button3 => LcdButton::MONO_BUTTON_3,
-        }
-    }
-}
-
-fn str_to_wchar(s: &str) -> Result<Vec<wchar_t>, LcdError> {
-    let mut v = s.encode_utf16().collect::<Vec<wchar_t>>();
+fn str_to_wchar(s: &str) -> Result<Vec<u16>, LcdError> {
+    let mut v = s.encode_utf16().collect::<Vec<u16>>();
 
     if v.iter().any(|&val| val == 0) {
         return Err(LcdError::NullCharacter);
@@ -124,14 +113,14 @@ impl MonoLcd {
         let ws = str_to_wchar(app_name)?;
 
         let ret = unsafe {
-            match LogiLcdInit(ws.as_ptr(), LcdType::MONO) {
-                Bool::TRUE => {
-                    match LogiLcdIsConnected(LcdType::MONO) {
-                        Bool::TRUE => Ok(MonoLcd),
-                        Bool::FALSE => Err(LcdError::NotConnected),
+            match LogiLcdInit(ws.as_ptr(), LcdType::Mono.into()) {
+                true => {
+                    match LogiLcdIsConnected(LcdType::Color.into()) {
+                        true => Ok(MonoLcd),
+                        false => Err(LcdError::NotConnected),
                     }
                 },
-                Bool::FALSE => Err(LcdError::Initialization),
+                false => Err(LcdError::Initialization),
             }
         };
         if ret.is_err() {
@@ -147,7 +136,7 @@ impl MonoLcd {
     ///
     pub fn is_connected() -> bool {
         unsafe {
-            LogiLcdIsConnected(LcdType::MONO).into()
+            LogiLcdIsConnected(LcdType::Mono.into())
         }
     }
 
@@ -161,7 +150,7 @@ impl MonoLcd {
     ///
     pub fn is_button_pressed(&self, button: MonoButton) -> bool {
         unsafe {
-            LogiLcdIsButtonPressed(button.lcd_button()).into()
+            LogiLcdIsButtonPressed(button.into())
         }
     }
 
@@ -192,8 +181,8 @@ impl MonoLcd {
         assert_eq!(bytemap.len(), MONO_WIDTH * MONO_HEIGHT);
         unsafe {
             match LogiLcdMonoSetBackground(bytemap.as_ptr()) {
-                Bool::TRUE  => Ok(()),
-                Bool::FALSE => Err(LcdError::MonoBackground),
+                true => Ok(()),
+                false => Err(LcdError::MonoBackground),
             }
         }
     }
@@ -213,8 +202,8 @@ impl MonoLcd {
         assert!(line_number < 4);
         unsafe {
             match LogiLcdMonoSetText(line_number as c_int, ws.as_ptr()) {
-                Bool::TRUE  => Ok(()),
-                Bool::FALSE => Err(LcdError::MonoText),
+                true => Ok(()),
+                false => Err(LcdError::MonoText),
             }
         }
     }
@@ -235,14 +224,14 @@ impl ColorLcd {
         let ws = str_to_wchar(app_name)?;
 
         let ret = unsafe {
-            match LogiLcdInit(ws.as_ptr(), LcdType::COLOR) {
-                Bool::TRUE => {
-                    match LogiLcdIsConnected(LcdType::COLOR) {
-                        Bool::TRUE => Ok(ColorLcd),
-                        Bool::FALSE => Err(LcdError::NotConnected),
+            match LogiLcdInit(ws.as_ptr(), LcdType::Color.into()) {
+                true => {
+                    match LogiLcdIsConnected(LcdType::Color.into()) {
+                        true => Ok(ColorLcd),
+                        false => Err(LcdError::NotConnected),
                     }
                 },
-                Bool::FALSE => Err(LcdError::Initialization),
+                false => Err(LcdError::Initialization),
             }
         };
         if ret.is_err() {
@@ -258,7 +247,7 @@ impl ColorLcd {
     ///
     pub fn is_connected() -> bool {
         unsafe {
-            LogiLcdIsConnected(LcdType::COLOR).into()
+            LogiLcdIsConnected(LcdType::Color.into())
         }
     }
 
@@ -272,7 +261,8 @@ impl ColorLcd {
     ///
     pub fn is_button_pressed(&self, button: ColorButton) -> bool {
         unsafe {
-            LogiLcdIsButtonPressed(button.lcd_button()).into()
+            let b: u32 = button.into();
+            LogiLcdIsButtonPressed(b << 8)
         }
     }
 
@@ -288,11 +278,11 @@ impl ColorLcd {
     }
 
     pub fn set_background(&mut self, bitmap: &[u8]) -> Result<(), LcdError> {
-        assert_eq!(bitmap.len(), COLOR_WIDTH * COLOR_HEIGHT * 4);
+        assert_eq!(bitmap.len(), COLOR_WIDTH * COLOR_HEIGHT * COLOR_BYTES_PER_PIXEL);
         unsafe {
             match LogiLcdColorSetBackground(bitmap.as_ptr()) {
-                Bool::TRUE  => Ok(()),
-                Bool::FALSE => Err(LcdError::ColorBackground),
+                true => Ok(()),
+                false => Err(LcdError::ColorBackground),
             }
         }
     }
@@ -306,8 +296,8 @@ impl ColorLcd {
             match LogiLcdColorSetTitle(ws.as_ptr(), red as c_int,
                 green as c_int, blue as c_int)
             {
-                Bool::TRUE  => Ok(()),
-                Bool::FALSE => Err(LcdError::ColorTitle),
+                true  => Ok(()),
+                false => Err(LcdError::ColorTitle),
             }
         }
     }
@@ -321,8 +311,8 @@ impl ColorLcd {
             match LogiLcdColorSetText(line_number as c_int,
                 ws.as_ptr(), red as c_int, green as c_int, blue as c_int)
             {
-                Bool::TRUE  => Ok(()),
-                Bool::FALSE => Err(LcdError::ColorText),
+                true => Ok(()),
+                false => Err(LcdError::ColorText),
             }
         }
     }
