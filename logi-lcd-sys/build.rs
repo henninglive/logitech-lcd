@@ -104,7 +104,10 @@ fn main() {
     // Get location of library from env var or try get path form winreg
     let lib_dir_str = match env::var("LOGITECH_LCD_LIB_DIR") {
         Ok(val) => val,
-        Err(_)  => dll_path_clsid(machine).unwrap(),
+        Err(_)  => dll_path_clsid(machine).expect("Couldn't find the logitech lcd sdk. \
+            Please make sure \"Logitech Gaming Software\" is installed or \
+            manually specify a library path with the \"LOGITECH_LCD_LIB_DIR\" \
+            environment variable"),
     };
 
     let dll_path = Path::new(&lib_dir_str[..]).join("LogitechLcd.dll");
@@ -114,12 +117,15 @@ fn main() {
         let lib_path = Path::new(&lib_dir_str[..]).join("LogitechLcd.lib");
 
         // We are missing the a .lib import library
-        if !lib_path.exists() || true {
+        if !lib_path.exists() {
 
             // Get visual studio install path
-            let vs_path_str = vs_path().unwrap();
+            let vs_path_str = vs_path().expect("Couldn't find visual studio install");
+
             let lib_tool_path = Path::new(&vs_path_str[..]).join("VC\\bin\\lib.exe");
-            assert!(lib_tool_path.is_file());
+            if !lib_tool_path.is_file() {
+                panic!("Couldn't find lib.exe at \"{}\"", lib_tool_path.to_str().unwrap());
+            }
 
             // Create .def file which contains a list symbols in our .dll file
             let def_file_path = Path::new(&out_dir_str[..]).join("LogitechLcd.def");
@@ -134,27 +140,33 @@ fn main() {
                 .arg(format!("/machine:{}", machine))
                 .current_dir(&out_dir_str)
                 .spawn()
-                .unwrap();
+                .expect("Failed to create .lib import library using lib.exe");
 
             // Link to the .lib file we created
             println!("cargo:rustc-link-search=native={}", out_dir_str);
         } else {
+            if !lib_path.is_file() {
+                panic!("Couldn't find LogitechLcd.lib at \"{}\"", lib_path.to_str().unwrap());
+            }
+
             // We found a .lib file, use that
             println!("cargo:rustc-link-search=native={}", lib_dir_str);
         }
 
     } else {
         // The gnu Compiler can link directly to our .dll file
-        assert!(dll_path.is_file());
-        assert_eq!(dll_path.file_name().unwrap(), "LogitechLcd.dll");
+        if !dll_path.is_file() {
+            panic!("Couldn't find LogitechLcd.dll at \"{}\"", dll_path.to_str().unwrap());
+        }
 
         // link to the .dll file
         println!("cargo:rustc-link-search=native={}", lib_dir_str);
     }
 
     if env::var("LOGITECH_LCD_COPY_OUT").is_ok() {
-        assert!(dll_path.is_file());
-        assert_eq!(dll_path.file_name().unwrap(), "LogitechLcd.dll");
+        if !dll_path.is_file() {
+            panic!("Couldn't find LogitechLcd.dll at \"{}\"", dll_path.to_str().unwrap());
+        }
 
         // Start with build out folder
         // Example: logi-lcd\target\debug\build\logi-lcd-sys-cb228bca7013f026\out
