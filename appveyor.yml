@@ -3,44 +3,50 @@ environment:
     PROJECT_NAME: logi-lcd
   matrix:
     # Stable channel
-    - TARGET: i686-pc-windows-gnu
-      CHANNEL: stable
-      DLL_TARGET: x86
-    - TARGET: i686-pc-windows-msvc
-      CHANNEL: stable
-      DLL_TARGET: x86
-    - TARGET: x86_64-pc-windows-gnu
-      CHANNEL: stable
+    - CHANNEL: stable
+      TARGET: x86_64-pc-windows-gnu
       DLL_TARGET: x64
-    - TARGET: x86_64-pc-windows-msvc
-      CHANNEL: stable
+    - CHANNEL: stable
+      TARGET: i686-pc-windows-gnu
+      DLL_TARGET: x86
+    - CHANNEL: stable
+      TARGET: x86_64-pc-windows-msvc
       DLL_TARGET: x64
+    - CHANNEL: stable
+      TARGET: i686-pc-windows-msvc
+      DLL_TARGET: x86
+
     # Beta channel
-    - TARGET: i686-pc-windows-gnu
-      CHANNEL: beta
-      DLL_TARGET: x86
-    - TARGET: i686-pc-windows-msvc
-      CHANNEL: beta
-      DLL_TARGET: x86
-    - TARGET: x86_64-pc-windows-gnu
-      CHANNEL: beta
+    - CHANNEL: beta
+      TARGET: x86_64-pc-windows-gnu
       DLL_TARGET: x64
-    - TARGET: x86_64-pc-windows-msvc
-      CHANNEL: beta
+    - CHANNEL: beta
+      TARGET: i686-pc-windows-gnu
+      DLL_TARGET: x86
+    - CHANNEL: beta
+      TARGET: x86_64-pc-windows-msvc
       DLL_TARGET: x64
+    - CHANNEL: beta
+      TARGET: i686-pc-windows-msvc
+      DLL_TARGET: x86
+
     # Nightly channel
-    - TARGET: i686-pc-windows-gnu
-      CHANNEL: nightly
-      DLL_TARGET: x86
-    - TARGET: i686-pc-windows-msvc
-      CHANNEL: nightly
-      DLL_TARGET: x86
-    - TARGET: x86_64-pc-windows-gnu
-      CHANNEL: nightly
+    - CHANNEL: nightly
+      TARGET: x86_64-pc-windows-gnu
       DLL_TARGET: x64
-    - TARGET: x86_64-pc-windows-msvc
-      CHANNEL: nightly
+    - CHANNEL: nightly
+      TARGET: i686-pc-windows-gnu
+      DLL_TARGET: x86
+    - CHANNEL: nightly
+      TARGET: x86_64-pc-windows-msvc
       DLL_TARGET: x64
+    - CHANNEL: nightly
+      TARGET: i686-pc-windows-msvc
+      DLL_TARGET: x86
+
+matrix:
+  allow_failures:
+    - CHANNEL: nightly
 
 install:
   # Install Rust
