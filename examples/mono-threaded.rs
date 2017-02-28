@@ -1,15 +1,15 @@
 extern crate logi_lcd;
 
-use logi_lcd::{MonoLcd, MONO_WIDTH, MONO_HEIGHT};
+use logi_lcd::{Lcd, LcdTypeMono, MONO_WIDTH, MONO_HEIGHT};
 use std::sync::Arc;
 use std::thread;
 use std::iter;
 
-fn blink(lcd: &mut MonoLcd, blank: &[u8], filled: &[u8]) {
+fn blink(lcd: &mut Lcd<LcdTypeMono>, blank: &[u8], filled: &[u8]) {
     for i in 0..10 {
         match i % 2 == 0 {
-            true  => lcd.set_background(blank).unwrap(),
-            false => lcd.set_background(filled).unwrap(),
+            true  => lcd.set_mono_background(blank).unwrap(),
+            false => lcd.set_mono_background(filled).unwrap(),
         }
         lcd.update();
         thread::sleep(std::time::Duration::from_millis(500));
@@ -17,7 +17,7 @@ fn blink(lcd: &mut MonoLcd, blank: &[u8], filled: &[u8]) {
 }
 
 fn main() {
-    let mut lcd = MonoLcd::connect("Threaded").unwrap();
+    let mut lcd = Lcd::<LcdTypeMono>::connect_mono("Threaded").unwrap();
     let blank = Arc::new(iter::repeat(0u8).take(MONO_WIDTH * MONO_HEIGHT).collect::<Vec<u8>>());
     let filled = Arc::new(iter::repeat(255u8).take(MONO_WIDTH * MONO_HEIGHT).collect::<Vec<u8>>());
     

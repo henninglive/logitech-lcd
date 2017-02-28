@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["Henning Ottesen <henning@live.no>"]
 
 [dependencies]
-enumflags = "*"
-enumflags_derive = "*"
+enumflags = "0.1.1"
+enumflags_derive = "0.1.1"
 
 [target.'cfg(windows)'.dependencies]
 logi-lcd-sys = {path = "logi-lcd-sys"}
