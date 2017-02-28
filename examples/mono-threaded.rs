@@ -17,7 +17,7 @@ fn blink(lcd: &mut Lcd<LcdTypeMono>, blank: &[u8], filled: &[u8]) {
 }
 
 fn main() {
-    let mut lcd = Lcd::<LcdTypeMono>::connect_mono("Threaded").unwrap();
+    let mut lcd = logi_lcd::init_mono("Threaded").unwrap();
     let blank = Arc::new(iter::repeat(0u8).take(MONO_WIDTH * MONO_HEIGHT).collect::<Vec<u8>>());
     let filled = Arc::new(iter::repeat(255u8).take(MONO_WIDTH * MONO_HEIGHT).collect::<Vec<u8>>());
     

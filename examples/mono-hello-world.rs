@@ -1,8 +1,7 @@
 extern crate logi_lcd;
-use logi_lcd::{Lcd, LcdTypeMono};
 
 fn main() {
-    let mut lcd = Lcd::<LcdTypeMono>::connect_mono("Hello World").unwrap();
+    let mut lcd = logi_lcd::init_mono("Hello World").unwrap();
     lcd.set_mono_text(1, "        Hello World!").unwrap();
     lcd.update();
 
