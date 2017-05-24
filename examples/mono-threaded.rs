@@ -20,7 +20,7 @@ fn main() {
     let mut lcd = Lcd::init_mono("Threaded").unwrap();
     let blank = Arc::new(iter::repeat(0u8).take(MONO_WIDTH * MONO_HEIGHT).collect::<Vec<u8>>());
     let filled = Arc::new(iter::repeat(255u8).take(MONO_WIDTH * MONO_HEIGHT).collect::<Vec<u8>>());
-    
+
     let blank2 = blank.clone();
     let filled2 = filled.clone();
 
