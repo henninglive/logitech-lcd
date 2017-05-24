@@ -1,9 +1,9 @@
 extern crate logi_lcd;
 
-use logi_lcd::{MONO_WIDTH, MONO_HEIGHT};
+use logi_lcd::{Lcd, MONO_WIDTH, MONO_HEIGHT};
 
 fn main() {
-    let mut lcd = logi_lcd::init_mono("Blink").unwrap();
+    let mut lcd = Lcd::init_mono("Blink").unwrap();
 
     let blank_screen  = std::iter::repeat(0u8).take(MONO_WIDTH * MONO_HEIGHT).collect::<Vec<u8>>();
     let filled_screen = std::iter::repeat(255u8).take(MONO_WIDTH * MONO_HEIGHT).collect::<Vec<u8>>();
