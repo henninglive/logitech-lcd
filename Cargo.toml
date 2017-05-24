@@ -3,10 +3,7 @@ name = "logi-lcd"
 version = "0.1.0"
 authors = ["Henning Ottesen <henning@live.no>"]
 
+# [dependencies] should be [target.'cfg(windows)'.dependencies], but that doesn't work for some reason.
+# Needs to be fixed if we want to add support for 3d party drivers on Linux adn OSX.
 [dependencies]
-enumflags = "0.1.1"
-enumflags_derive = "0.1.1"
-
-[target.'cfg(windows)'.dependencies]
 logi-lcd-sys = {path = "logi-lcd-sys"}
-

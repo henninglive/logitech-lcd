@@ -2,9 +2,13 @@
 name = "logi-lcd-sys"
 version = "0.1.0"
 authors = ["Henning Ottesen <henning@live.no>"]
-description = "Rust FFI bindings for the Logitech LCD SDK."
+description = "FFI bindings for the Logitech LCD SDK."
 links = "LogitechLcd"
 build = "build.rs"
 
 [build-dependencies]
 winreg = "0.4"
+
+[dependencies]
+enumflags = "0.1.2"
+enumflags_derive = "0.2.2"

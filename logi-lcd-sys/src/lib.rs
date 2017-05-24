@@ -1,30 +1,66 @@
-#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case)]
+#![allow(non_camel_case_types)]
 
+#[macro_use]
+extern crate enumflags_derive;
+extern crate enumflags;
+
+pub use enumflags::BitFlags;
 use std::os::raw::{c_int, c_uint};
 
-pub const LOGI_LCD_MONO_WIDTH:     usize = 160;
-pub const LOGI_LCD_MONO_HEIGHT:    usize = 43;
-pub const LOGI_LCD_MONO_PXL_BSIZE: usize = 1;
-pub const LOGI_LCD_COLOR_WIDTH:    usize = 320;
-pub const LOGI_LCD_COLOR_HEIGHT:   usize = 240;
-pub const LOGI_LCD_COLOR_PXL_BSIZE: usize = 4;
+pub const MONO_WIDTH:  usize = 160;
+pub const MONO_HEIGHT: usize = 43;
+pub const MONO_BYTES_PER_PIXEL: usize = 1;
+pub const COLOR_WIDTH:  usize = 320;
+pub const COLOR_HEIGHT: usize = 240;
+pub const COLOR_BYTES_PER_PIXEL: usize = 4;
 
-pub const LOGI_LCD_TYPE_MONO:  c_uint = 0x00000001;
-pub const LOGI_LCD_TYPE_COLOR: c_uint = 0x00000002;
+#[derive(EnumFlags, Copy, Clone, Debug)]
+#[repr(u32)]
+pub enum LcdType {
+    MONO  = 0x00000001,
+    COLOR = 0x00000002,
+}
 
-pub const LOGI_LCD_MONO_BUTTON_0:       c_uint = 0x00000001;
-pub const LOGI_LCD_MONO_BUTTON_1:       c_uint = 0x00000002;
-pub const LOGI_LCD_MONO_BUTTON_2:       c_uint = 0x00000004;
-pub const LOGI_LCD_MONO_BUTTON_3:       c_uint = 0x00000008;
+#[derive(EnumFlags, Copy, Clone, Debug)]
+#[repr(u32)]
+pub enum LcdButton {
+    MONO_BUTTON_0 = 0x00000001,
+    MONO_BUTTON_1 = 0x00000002,
+    MONO_BUTTON_2 = 0x00000004,
+    MONO_BUTTON_3 = 0x00000008,
+    COLOR_BUTTON_LEFT   = 0x00000100,
+    COLOR_BUTTON_RIGHT  = 0x00000200,
+    COLOR_BUTTON_OK     = 0x00000400,
+    COLOR_BUTTON_CANCEL = 0x00000800,
+    COLOR_BUTTON_UP     = 0x00001000,
+    COLOR_BUTTON_DOWN   = 0x00002000,
+    COLOR_BUTTON_MENU   = 0x00004000,
+}
 
+impl LcdType {
+    pub fn either() -> BitFlags<LcdType> {
+        LcdType::MONO | LcdType::COLOR
+    }
+}
 
-pub const LOGI_LCD_COLOR_BUTTON_LEFT:   c_uint = 0x00000100;
-pub const LOGI_LCD_COLOR_BUTTON_RIGHT:  c_uint = 0x00000200;
-pub const LOGI_LCD_COLOR_BUTTON_OK:     c_uint = 0x00000400;
-pub const LOGI_LCD_COLOR_BUTTON_CANCEL: c_uint = 0x00000800;
-pub const LOGI_LCD_COLOR_BUTTON_UP:     c_uint = 0x00001000;
-pub const LOGI_LCD_COLOR_BUTTON_DOWN:   c_uint = 0x00002000;
-pub const LOGI_LCD_COLOR_BUTTON_MENU:   c_uint = 0x00004000;
+impl LcdButton {
+    pub fn mono() -> BitFlags<LcdButton> {
+        LcdButton::MONO_BUTTON_0 |
+        LcdButton::MONO_BUTTON_1 |
+        LcdButton::MONO_BUTTON_2 |
+        LcdButton::MONO_BUTTON_3
+    }
+
+    pub fn color() -> BitFlags<LcdButton> {
+        LcdButton::COLOR_BUTTON_LEFT |
+        LcdButton::COLOR_BUTTON_RIGHT |
+        LcdButton::COLOR_BUTTON_OK |
+        LcdButton::COLOR_BUTTON_CANCEL |
+        LcdButton::COLOR_BUTTON_UP |
+        LcdButton::COLOR_BUTTON_DOWN |
+        LcdButton::COLOR_BUTTON_MENU
+    }
+}
 
 #[link(name="LogitechLcd")]
 extern "C" {

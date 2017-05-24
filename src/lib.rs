@@ -1,23 +1,21 @@
 extern crate logi_lcd_sys as sys;
-extern crate enumflags;
-#[macro_use] extern crate enumflags_derive;
 
-use sys::*;
-use enumflags::*;
+pub use sys::LcdButton;
+pub use sys::BitFlags;
+pub use sys::MONO_WIDTH;
+pub use sys::MONO_HEIGHT;
+pub use sys::MONO_BYTES_PER_PIXEL;
+pub use sys::COLOR_WIDTH;
+pub use sys::COLOR_HEIGHT;
+pub use sys::COLOR_BYTES_PER_PIXEL;
+
+use sys::LcdType as LcdTypeFlags;
 
 use std::marker::PhantomData;
 use std::os::raw::c_int;
 use std::sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-
-pub const MONO_WIDTH: usize   = sys::LOGI_LCD_MONO_WIDTH;
-pub const MONO_HEIGHT: usize  = sys::LOGI_LCD_MONO_HEIGHT;
-pub const MONO_BYTES_PER_PIXEL: usize = sys::LOGI_LCD_MONO_PXL_BSIZE;
-
-pub const COLOR_WIDTH: usize  = sys::LOGI_LCD_COLOR_WIDTH;
-pub const COLOR_HEIGHT: usize = sys::LOGI_LCD_COLOR_HEIGHT;
-pub const COLOR_BYTES_PER_PIXEL: usize = sys::LOGI_LCD_COLOR_PXL_BSIZE;
 
 static INITIALIZED: AtomicBool = ATOMIC_BOOL_INIT;
 
@@ -34,22 +32,6 @@ pub struct Lcd<T: LcdType> {
     type_data: PhantomData<T>,
 }
 
-#[derive(EnumFlags, Copy, Clone, Debug)]
-#[repr(u32)]
-pub enum Button {
-    M0     = 0x00000001,
-    M1     = 0x00000002,
-    M2     = 0x00000004,
-    M3     = 0x00000008,
-    Left   = 0x00000100,
-    Right  = 0x00000200,
-    Ok     = 0x00000400,
-    Cancel = 0x00000800,
-    Up     = 0x00001000,
-    Down   = 0x00002000,
-    Menu   = 0x00004000,
-}
-
 #[derive(Debug)]
 pub enum LcdError {
     NotConnected,
@@ -60,13 +42,6 @@ pub enum LcdError {
     ColorTitle,
     ColorText,
     NullCharacter,
-}
-
-#[derive(EnumFlags, Copy, Clone, Debug)]
-#[repr(u32)]
-enum LcdTypeFlags {
-    Mono  = 0x00000001,
-    Color = 0x00000002,
 }
 
 impl LcdType for LcdTypeMono {}
@@ -111,22 +86,13 @@ fn str_to_wchar(s: &str) -> Result<Vec<u16>, LcdError> {
     Ok(v)
 }
 
-pub fn mono_buttons() -> BitFlags<Button> {
-    ( Button::M0 | Button::M1 | Button::M2 | Button::M3)
-}
-
-pub fn color_buttons() -> BitFlags<Button> {
-    ( Button::Left | Button::Right | Button::Ok | Button::Cancel |
-    Button::Up | Button::Down | Button::Menu )
-}
-
 unsafe fn init(app_name: &str, type_flags: u32) -> Result<(), LcdError> {
     assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
     let ws = str_to_wchar(app_name)?;
 
-    let ret = match LogiLcdInit(ws.as_ptr(), type_flags) {
+    let ret = match sys::LogiLcdInit(ws.as_ptr(), type_flags) {
         true => {
-            match LogiLcdIsConnected(type_flags) {
+            match sys::LogiLcdIsConnected(type_flags) {
                 true => Ok(()),
                 false => Err(LcdError::NotConnected),
             }
@@ -149,7 +115,7 @@ unsafe fn init(app_name: &str, type_flags: u32) -> Result<(), LcdError> {
 /// Will panic if another lcd instance exits.
 ///
 pub fn init_mono(app_name: &str) -> Result<Lcd<LcdTypeMono>, LcdError>  {
-    let type_flags: u32 = LcdTypeFlags::Mono.into();
+    let type_flags: u32 = LcdTypeFlags::MONO.into();
     unsafe {
         init(app_name, type_flags).map(|_| Lcd {
             type_flags: type_flags, 
@@ -167,7 +133,7 @@ pub fn init_mono(app_name: &str) -> Result<Lcd<LcdTypeMono>, LcdError>  {
 /// Will panic if another lcd instance exits.
 ///
 pub fn init_color(app_name: &str) -> Result<Lcd<LcdTypeColor>, LcdError> {
-    let type_flags: u32 = LcdTypeFlags::Color.into();
+    let type_flags: u32 = LcdTypeFlags::COLOR.into();
     unsafe {
         init(app_name, type_flags).map(|_| Lcd {
             type_flags: type_flags, 
@@ -185,7 +151,7 @@ pub fn init_color(app_name: &str) -> Result<Lcd<LcdTypeColor>, LcdError> {
 /// Will panic if another lcd instance exits.
 ///
 pub fn init_either(app_name: &str) -> Result<Lcd<LcdTypeBoth>, LcdError> {
-    let type_flags = (LcdTypeFlags::Mono | LcdTypeFlags::Color).bits();
+    let type_flags = LcdTypeFlags::either().bits();
     unsafe {
         init(app_name, type_flags).map(|_| Lcd {
             type_flags: type_flags, 
@@ -202,7 +168,7 @@ impl<T: LcdType> Lcd<T> {
     ///
     pub fn is_connected(&self) -> bool {
         unsafe {
-            LogiLcdIsConnected(self.type_flags)
+            sys::LogiLcdIsConnected(self.type_flags)
         }
     }
 
@@ -213,13 +179,13 @@ impl<T: LcdType> Lcd<T> {
     ///
     pub fn update(&mut self) {
         unsafe {
-            LogiLcdUpdate();
+            sys::LogiLcdUpdate();
         }
     }
 }
 
 impl<T: LcdType + LcdMono> Lcd<T> {
-    /// Checks if the button specified by the parameter is being pressed.
+    /// Checks if the buttons specified by the parameter are being pressed.
     ///
     /// ### Return value:
     /// If the button specified is being pressed it returns `true`. Otherwise `false`
@@ -227,9 +193,9 @@ impl<T: LcdType + LcdMono> Lcd<T> {
     /// ### Notes:
     /// The button will be considered pressed only if your applet is the one currently in the foreground.
     ///
-    pub fn is_mono_buttons_pressed(&self, buttons: BitFlags<Button>) -> bool {
+    pub fn is_mono_buttons_pressed(&self, buttons: BitFlags<LcdButton>) -> bool {
         unsafe {
-            LogiLcdIsButtonPressed((buttons & mono_buttons()).bits())
+            sys::LogiLcdIsButtonPressed((buttons & LcdButton::mono()).bits())
         }
     }
 
@@ -248,7 +214,7 @@ impl<T: LcdType + LcdMono> Lcd<T> {
     pub fn set_mono_background(&mut self, bytemap: &[u8]) -> Result<(), LcdError> {
         assert_eq!(bytemap.len(), MONO_WIDTH * MONO_HEIGHT);
         unsafe {
-            match LogiLcdMonoSetBackground(bytemap.as_ptr()) {
+            match sys::LogiLcdMonoSetBackground(bytemap.as_ptr()) {
                 true => Ok(()),
                 false => Err(LcdError::MonoBackground),
             }
@@ -269,7 +235,7 @@ impl<T: LcdType + LcdMono> Lcd<T> {
         let ws = str_to_wchar(text)?;
         assert!(line_number < 4);
         unsafe {
-            match LogiLcdMonoSetText(line_number as c_int, ws.as_ptr()) {
+            match sys::LogiLcdMonoSetText(line_number as c_int, ws.as_ptr()) {
                 true => Ok(()),
                 false => Err(LcdError::MonoText),
             }
@@ -278,7 +244,7 @@ impl<T: LcdType + LcdMono> Lcd<T> {
 }
 
 impl<T: LcdType + LcdColor> Lcd<T> {
-    /// Checks if the button specified by the parameter is being pressed.
+    /// Checks if the buttons specified by the parameter are being pressed.
     ///
     /// ### Return value:
     /// If the button specified is being pressed it returns `true`. Otherwise `false`
@@ -286,16 +252,16 @@ impl<T: LcdType + LcdColor> Lcd<T> {
     /// ### Notes:
     /// The button will be considered pressed only if your applet is the one currently in the foreground.
     ///
-    pub fn is_color_buttons_pressed(&self, buttons: BitFlags<Button>) -> bool {
+    pub fn is_color_buttons_pressed(&self, buttons: BitFlags<LcdButton>) -> bool {
         unsafe {
-            LogiLcdIsButtonPressed((buttons & color_buttons()).bits() << 8)
+            sys::LogiLcdIsButtonPressed((buttons & LcdButton::color()).bits())
         }
     }
 
     pub fn set_color_background(&mut self, bitmap: &[u8]) -> Result<(), LcdError> {
         assert_eq!(bitmap.len(), COLOR_WIDTH * COLOR_HEIGHT * COLOR_BYTES_PER_PIXEL);
         unsafe {
-            match LogiLcdColorSetBackground(bitmap.as_ptr()) {
+            match sys::LogiLcdColorSetBackground(bitmap.as_ptr()) {
                 true => Ok(()),
                 false => Err(LcdError::ColorBackground),
             }
@@ -308,7 +274,7 @@ impl<T: LcdType + LcdColor> Lcd<T> {
         let ws = str_to_wchar(text)?;
 
         unsafe {
-            match LogiLcdColorSetTitle(ws.as_ptr(), red as c_int,
+            match sys::LogiLcdColorSetTitle(ws.as_ptr(), red as c_int,
                 green as c_int, blue as c_int)
             {
                 true  => Ok(()),
@@ -323,7 +289,7 @@ impl<T: LcdType + LcdColor> Lcd<T> {
         let ws = str_to_wchar(text)?;
         assert!(line_number < 4);
         unsafe {
-            match LogiLcdColorSetText(line_number as c_int,
+            match sys::LogiLcdColorSetText(line_number as c_int,
                 ws.as_ptr(), red as c_int, green as c_int, blue as c_int)
             {
                 true => Ok(()),
@@ -337,7 +303,7 @@ impl<T: LcdType> Drop for Lcd<T> {
     /// Kills the applet and frees memory used by the SDK
     fn drop(&mut self) {
         unsafe {
-            LogiLcdShutdown();
+            sys::LogiLcdShutdown();
         }
         INITIALIZED.store(false, Ordering::SeqCst);
     }
