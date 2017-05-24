@@ -1,3 +1,47 @@
+#![warn(missing_docs)]
+
+//! # logi-lcd
+//! logi-lcd provides binding for the [Logitech Gaming LCD/Gamepanel SDK]
+//! (http://gaming.logitech.com/en-us/developers).
+//!
+//! ## Overview
+//! The Logitech LCD/GamePanel SDK introduces second screen capability that allows GamePanel-enabled
+//! Logitech gaming keyboards to display in-game info, system statistics, and more.
+//! The SDK enables integration of GamePanel functionality within your code.
+//!
+//! ## Lcd Interface
+//! The SDK interface is implemented by the [Lcd](struct.Lcd.html) struct. Create a new
+//! [Lcd](struct.Lcd.html) at start of program. Update it with the provided methods.
+//! The [Lcd](struct.Lcd.html) will automatically disconnect when the [Lcd](struct.Lcd.html)
+//! goes out of scope.
+//!
+//! ## Example
+//! ```
+//! let mut lcd = logi_lcd::Lcd::init_mono("My Glorious App").unwrap();
+//!
+//! lcd.set_mono_text(0, "Hello World!").unwrap();
+//!
+//! lcd.update();
+//! ```
+//!
+//! ## Error Handling
+//!
+//! ## Do’s and Don’ts
+//! These are a few guidelines that may help you implement 'better' support in your application:
+//!
+//! - For color use a splash screen when the application starts up.
+//! - For color have a nice background image to take full advantage of the RGBA LCD.
+//! - Don’t just display information on the LCD that is already being displayed on main view of your
+//! application. Instead display information he can only see when hitting tab or going to the menu.
+//! - Use the LCD to unclutter the main view.
+//! - Write support for both the color and monochrome LCDs, as both have an important user base.
+//! - Text displayed on the LCD is fixed-width, so you can easily create multiple columns that
+//! always align correctly.
+//! - If you want to create custom screens, draw your own bitmaps and update the background LCD
+//! bitmap up to 60 times/second.
+//! - Use the buttons to create multiple pages or add functionality to the LCD.
+//!
+
 extern crate logi_lcd_sys as sys;
 
 pub use sys::{
