@@ -2,13 +2,11 @@
 name = "logi-lcd-sys"
 version = "0.1.0"
 authors = ["Henning Ottesen <henning@live.no>"]
-description = "FFI bindings for the Logitech LCD SDK."
-links = "LogitechLcd"
-build = "build.rs"
-
-[build-dependencies]
-winreg = "0.4"
+description = "Loader and FFI bindings for the Logitech LCD SDK."
 
 [dependencies]
 enumflags = "0.1.2"
 enumflags_derive = "0.2.2"
+winapi = "0.2.8"
+kernel32-sys = "0.2.2"
+winreg = "0.4"

@@ -55,15 +55,6 @@ install:
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
   - rustc -Vv
   - cargo -V
-  # Download and unzip the Logitech Gaming LCD SDK
-  - mkdir lib
-  - curl -sSf -o LCD_SDK.zip http://download01.logitech.com/web/ftp/pub/techsupport/SDK/LCDSDK_8.57.148.zip
-  - 7z -oLCD_SDK x LCD_SDK.zip
-  - copy LCD_SDK\Lib\GameEnginesWrapper\%DLL_TARGET%\LogitechLcdEnginesWrapper.dll lib\LogitechLcd.dll
-  # Set manually point to build scipt to our .dll
-  - set APPVEYOR_BUILD_FOLDER_FS=%APPVEYOR_BUILD_FOLDER:\=/%
-  - set LOGITECH_LCD_LIB_DIR=%APPVEYOR_BUILD_FOLDER_FS%/lib
-  - set LOGITECH_LCD_COPY_OUT=TRUE
 
 build: false
 
@@ -71,8 +62,6 @@ test_script:
   # Build, we can't really test without the actual hardware
   - cargo build --verbose
   - cargo build --verbose --example mono-blink
-  # Check if dll was copied
-  - ps: $host.SetShouldExit(-not (Test-Path $env:appveyor_build_folder\target\debug\LogitechLcd.dll) -as [int32])
 
 branches:
   only:

@@ -1,5 +1,4 @@
 #![warn(missing_docs)]
-
 //! # logi-lcd
 //! logi-lcd provides binding for the [Logitech Gaming LCD/Gamepanel SDK]
 //! (http://gaming.logitech.com/en-us/developers).
@@ -45,24 +44,25 @@
 extern crate logi_lcd_sys as sys;
 
 pub use sys::{
-    LcdButton, LcdType, BitFlags,
+    LogitechLcd, LcdButton, LcdType, BitFlags,
     MONO_WIDTH, MONO_HEIGHT, MONO_BYTES_PER_PIXEL,
     COLOR_WIDTH, COLOR_HEIGHT, COLOR_BYTES_PER_PIXEL
 };
 
 use std::sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT};
-use std::fmt::{Display, Formatter};
-use std::error::Error;
 use std::os::raw::c_int;
+use std::os::windows::ffi::OsStrExt;
+use std::ffi::OsStr;
 
 static INITIALIZED: AtomicBool = ATOMIC_BOOL_INIT;
 
 pub struct Lcd {
     type_flags: BitFlags<LcdType>,
+    lib: LogitechLcd,
 }
 
 #[derive(Debug)]
-pub enum LcdError {
+pub enum Error {
     NotConnected,
     Initialization,
     MonoBackground,
@@ -71,55 +71,65 @@ pub enum LcdError {
     ColorTitle,
     ColorText,
     NullCharacter,
+    LoadLibrary(Box<std::error::Error>),
 }
 
-impl Error for LcdError {
+impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            LcdError::NotConnected    => "LCD is not connected",
-            LcdError::Initialization  => "A FFI call to LogiLcdInit() has failed",
-            LcdError::MonoBackground  => "A FFI call to LogiLcdMonoSetBackground() has failed",
-            LcdError::MonoText        => "A FFI call to LogiLcdMonoSetText() has failed",
-            LcdError::ColorBackground => "A FFI call to LogiLcdColorSetBackground() has failed",
-            LcdError::ColorTitle      => "A FFI call to LogiLcdColorSetTitle() has failed",
-            LcdError::ColorText       => "A FFI call to LogiLcdColorSetText() has failed",
-            LcdError::NullCharacter   => "Unexpected NULL character",
+            Error::NotConnected    => "LCD is not connected",
+            Error::Initialization  => "A FFI call to LogiLcdInit() has failed",
+            Error::MonoBackground  => "A FFI call to LogiLcdMonoSetBackground() has failed",
+            Error::MonoText        => "A FFI call to LogiLcdMonoSetText() has failed",
+            Error::ColorBackground => "A FFI call to LogiLcdColorSetBackground() has failed",
+            Error::ColorTitle      => "A FFI call to LogiLcdColorSetTitle() has failed",
+            Error::ColorText       => "A FFI call to LogiLcdColorSetText() has failed",
+            Error::NullCharacter   => "Unexpected NULL character",
+            Error::LoadLibrary(_)  => "Failed to load dynamic library",
         }
     }
 }
 
-impl Display for LcdError {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "LcdError: {}", self.description())
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use std::error::Error;
+        match self.cause() {
+            Some(c) => write!(f, "LcdError: {}, Cause: {}", self.description(), c.description()),
+            None => write!(f, "LcdError: {}", self.description()),
+        }
     }
 }
 
-fn str_to_wchar(s: &str) -> Result<Vec<u16>, LcdError> {
-    let mut v = s.encode_utf16().collect::<Vec<u16>>();
-
-    if v.iter().any(|&val| val == 0) {
-        return Err(LcdError::NullCharacter);
+fn str_to_wchar_checked(s: &str) -> Result<Vec<u16>, Error> {
+    // Check for null character
+    if s.chars().any(|c| c as u32 == 0) {
+        return Err(Error::NullCharacter);
     }
 
-    v.push(0);
-
-    Ok(v)
+    // Encode as widechar/utf-16 and terminate with \0\0
+    Ok(OsStr::new(s).encode_wide().chain(Some(0)).collect::<Vec<u16>>())
 }
 
 impl Lcd {
-    fn init(app_name: &str, type_flags: BitFlags<LcdType>) -> Result<Lcd, LcdError> {
+    fn init(app_name: &str, type_flags: BitFlags<LcdType>) -> Result<Lcd, Error> {
         assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
-        let ws = str_to_wchar(app_name)?;
+
+        let lib = LogitechLcd::load().map_err(|e| Error::LoadLibrary(Box::new(e)))?;
+
+        let ws = str_to_wchar_checked(app_name)?;
 
         let ret = unsafe {
-            match sys::LogiLcdInit(ws.as_ptr(), type_flags.bits()) {
+            match (lib.LogiLcdInit)(ws.as_ptr(), type_flags.bits()) {
                 true => {
-                    match sys::LogiLcdIsConnected(type_flags.bits()) {
-                        true => Ok(Lcd{type_flags: type_flags}),
-                        false => Err(LcdError::NotConnected),
+                    match (lib.LogiLcdIsConnected)(type_flags.bits()) {
+                        true => Ok(Lcd {
+                            type_flags: type_flags,
+                            lib: lib,
+                        }),
+                        false => Err(Error::NotConnected),
                     }
                 },
-                false => Err(LcdError::Initialization),
+                false => Err(Error::Initialization),
             }
         };
 
@@ -138,7 +148,7 @@ impl Lcd {
     /// ### Panics
     /// Will panic if another lcd instance exits.
     ///
-    pub fn init_mono(app_name: &str) -> Result<Lcd, LcdError>  {
+    pub fn init_mono(app_name: &str) -> Result<Lcd, Error>  {
         Self::init(app_name, LcdType::MONO.into())
     }
 
@@ -150,7 +160,7 @@ impl Lcd {
     /// ### Panics
     /// Will panic if another lcd instance exits.
     ///
-    pub fn init_color(app_name: &str) -> Result<Lcd, LcdError>  {
+    pub fn init_color(app_name: &str) -> Result<Lcd, Error>  {
         Self::init(app_name, LcdType::COLOR.into())
     }
 
@@ -162,7 +172,7 @@ impl Lcd {
     /// ### Panics
     /// Will panic if another lcd instance exits.
     ///
-    pub fn init_either(app_name: &str) -> Result<Lcd, LcdError> {
+    pub fn init_either(app_name: &str) -> Result<Lcd, Error> {
         Self::init(app_name, LcdType::either())
     }
 
@@ -173,7 +183,7 @@ impl Lcd {
     ///
     pub fn is_connected(&self) -> bool {
         unsafe {
-            sys::LogiLcdIsConnected(self.type_flags.bits())
+            (self.lib.LogiLcdIsConnected)(self.type_flags.bits())
         }
     }
 
@@ -184,7 +194,7 @@ impl Lcd {
     ///
     pub fn update(&mut self) {
         unsafe {
-            sys::LogiLcdUpdate();
+            (self.lib.LogiLcdUpdate)();
         }
     }
 
@@ -200,7 +210,7 @@ impl Lcd {
         assert!(!(self.type_flags | LcdType::MONO).is_empty());
 
         unsafe {
-            sys::LogiLcdIsButtonPressed((buttons & LcdButton::mono()).bits())
+            (self.lib.LogiLcdIsButtonPressed)((buttons & LcdButton::mono()).bits())
         }
     }
 
@@ -216,14 +226,14 @@ impl Lcd {
     /// ### Panics
     /// Will panic if bytemaps size is not 160x43bytes long.
     ///
-    pub fn set_mono_background(&mut self, bytemap: &[u8]) -> Result<(), LcdError> {
+    pub fn set_mono_background(&mut self, bytemap: &[u8]) -> Result<(), Error> {
         assert!(!(self.type_flags | LcdType::MONO).is_empty());
         assert_eq!(bytemap.len(), MONO_WIDTH * MONO_HEIGHT);
 
         unsafe {
-            match sys::LogiLcdMonoSetBackground(bytemap.as_ptr()) {
+            match (self.lib.LogiLcdMonoSetBackground)(bytemap.as_ptr()) {
                 true => Ok(()),
-                false => Err(LcdError::MonoBackground),
+                false => Err(Error::MonoBackground),
             }
         }
     }
@@ -238,16 +248,16 @@ impl Lcd {
     /// ### Panics
     /// Will panic if line_number larger than or equal to 4.
     ///
-    pub fn set_mono_text(&mut self, line_number: usize, text: &str) -> Result<(), LcdError> {
+    pub fn set_mono_text(&mut self, line_number: usize, text: &str) -> Result<(), Error> {
         assert!(!(self.type_flags | LcdType::MONO).is_empty());
 
-        let ws = str_to_wchar(text)?;
+        let ws = str_to_wchar_checked(text)?;
         assert!(line_number < 4);
 
         unsafe {
-            match sys::LogiLcdMonoSetText(line_number as c_int, ws.as_ptr()) {
+            match (self.lib.LogiLcdMonoSetText)(line_number as c_int, ws.as_ptr()) {
                 true => Ok(()),
-                false => Err(LcdError::MonoText),
+                false => Err(Error::MonoText),
             }
         }
     }
@@ -264,52 +274,52 @@ impl Lcd {
         assert!(!(self.type_flags | LcdType::COLOR).is_empty());
 
         unsafe {
-            sys::LogiLcdIsButtonPressed((buttons & LcdButton::color()).bits())
+            (self.lib.LogiLcdIsButtonPressed)((buttons & LcdButton::color()).bits())
         }
     }
 
-    pub fn set_color_background(&mut self, bitmap: &[u8]) -> Result<(), LcdError> {
+    pub fn set_color_background(&mut self, bitmap: &[u8]) -> Result<(), Error> {
         assert!(!(self.type_flags | LcdType::COLOR).is_empty());
         assert_eq!(bitmap.len(), COLOR_WIDTH * COLOR_HEIGHT * COLOR_BYTES_PER_PIXEL);
 
         unsafe {
-            match sys::LogiLcdColorSetBackground(bitmap.as_ptr()) {
+            match (self.lib.LogiLcdColorSetBackground)(bitmap.as_ptr()) {
                 true => Ok(()),
-                false => Err(LcdError::ColorBackground),
+                false => Err(Error::ColorBackground),
             }
         }
     }
 
     pub fn set_color_title(&mut self, text: &str, red: u8, green: u8, blue: u8)
-        -> Result<(), LcdError>
+        -> Result<(), Error>
     {
         assert!(!(self.type_flags | LcdType::COLOR).is_empty());
-        let ws = str_to_wchar(text)?;
+        let ws = str_to_wchar_checked(text)?;
 
         unsafe {
-            match sys::LogiLcdColorSetTitle(ws.as_ptr(), red as c_int,
+            match (self.lib.LogiLcdColorSetTitle)(ws.as_ptr(), red as c_int,
                 green as c_int, blue as c_int)
             {
                 true  => Ok(()),
-                false => Err(LcdError::ColorTitle),
+                false => Err(Error::ColorTitle),
             }
         }
     }
 
     pub fn set_color_text(&mut self, line_number: usize, text: &str,
-        red: u8, green: u8, blue: u8) -> Result<(), LcdError>
+        red: u8, green: u8, blue: u8) -> Result<(), Error>
     {
         assert!(!(self.type_flags | LcdType::COLOR).is_empty());
 
-        let ws = str_to_wchar(text)?;
+        let ws = str_to_wchar_checked(text)?;
         assert!(line_number < 8);
 
         unsafe {
-            match sys::LogiLcdColorSetText(line_number as c_int,
+            match (self.lib.LogiLcdColorSetText)(line_number as c_int,
                 ws.as_ptr(), red as c_int, green as c_int, blue as c_int)
             {
                 true => Ok(()),
-                false => Err(LcdError::ColorText),
+                false => Err(Error::ColorText),
             }
         }
     }
@@ -319,7 +329,7 @@ impl Drop for Lcd {
     /// Kills the applet and frees memory used by the SDK
     fn drop(&mut self) {
         unsafe {
-            sys::LogiLcdShutdown();
+            (self.lib.LogiLcdShutdown)();
         }
         INITIALIZED.store(false, Ordering::SeqCst);
     }
