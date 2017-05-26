@@ -7,7 +7,7 @@ extern crate winapi;
 extern crate kernel32;
 extern crate winreg;
 
-pub use enumflags::BitFlags;
+pub use enumflags::{BitFlags, EnumFlagSize, InnerBitFlags};
 
 use winreg::RegKey;
 use winreg::enums::{HKEY_LOCAL_MACHINE, HKEY_CLASSES_ROOT, KEY_READ};
@@ -25,6 +25,7 @@ pub const COLOR_WIDTH:  usize = 320;
 pub const COLOR_HEIGHT: usize = 240;
 pub const COLOR_BYTES_PER_PIXEL: usize = 4;
 
+/// Bitflags for specifying LCD types, combine with [BitFlags](struct.BitFlags.html)
 #[derive(EnumFlags, Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum LcdType {
@@ -32,6 +33,7 @@ pub enum LcdType {
     COLOR = 0x00000002,
 }
 
+/// Bitflags for LCD Buttons, combine with [BitFlags](struct.BitFlags.html)
 #[derive(EnumFlags, Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum LcdButton {
@@ -90,6 +92,8 @@ pub struct LogitechLcd {
     pub LogiLcdMonoResetBackgroundUDK: unsafe extern "C" fn() -> c_int,
     handle: HMODULE,
 }
+
+unsafe impl std::marker::Send for LogitechLcd {}
 
 impl Error {
     fn new(kind: ErrorKind) -> Error {

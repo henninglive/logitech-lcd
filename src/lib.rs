@@ -10,20 +10,57 @@
 //!
 //! ## Lcd Interface
 //! The SDK interface is implemented by the [Lcd](struct.Lcd.html) struct. Create a new
-//! [Lcd](struct.Lcd.html) at start of program. Update it with the provided methods.
+//! [Lcd](struct.Lcd.html) at start of program. Update the screen with the provided methods.
 //! The [Lcd](struct.Lcd.html) will automatically disconnect when the [Lcd](struct.Lcd.html)
-//! goes out of scope.
+//! is dropped.
 //!
-//! ## Example
+//! ## Examples
+//!
+//! ### Monochrome
+//! ```no_run
+//! let mut lcd = logi_lcd::Lcd::init_mono("My Glorious Monochrome App").unwrap();
+//!
+//! for i in 0..{
+//!     lcd.set_mono_text(0, &format!("update:{}", i)[..]).unwrap();
+//!
+//!     lcd.update();
+//!
+//!     std::thread::sleep(std::time::Duration::from_millis(15));
+//! }
 //! ```
-//! let mut lcd = logi_lcd::Lcd::init_mono("My Glorious App").unwrap();
+//! ### Color
+//! ```no_run
+//! let mut lcd = logi_lcd::Lcd::init_color("My Glorious Color App").unwrap();
 //!
-//! lcd.set_mono_text(0, "Hello World!").unwrap();
+//! for i in 0..{
+//!     lcd.set_color_text(0, &format!("update:{}", i)[..], i as u8,
+//!         (i >> 8) as u8, (i >> 16) as u8).unwrap();
 //!
-//! lcd.update();
+//!     lcd.update();
+//!
+//!     std::thread::sleep(std::time::Duration::from_millis(15));
+//! }
+//! std::thread::sleep(std::time::Duration::from_millis(1000));
+//! ```
+//! ### Monochrome and Color
+//! ```no_run
+//! let mut lcd = logi_lcd::Lcd::init_either("My Glorious App").unwrap();
+//!
+//! for i in 0..{
+//!     lcd.set_mono_text(0,  &format!("update:{}", i)[..]).unwrap();
+//!
+//!     lcd.set_color_text(0, &format!("update:{}", i)[..], i as u8,
+//!         (i >> 8) as u8, (i >> 16) as u8).unwrap();
+//!
+//!     lcd.update();
+//!
+//!     std::thread::sleep(std::time::Duration::from_millis(15));
+//! }
 //! ```
 //!
 //! ## Error Handling
+//! The underling Logitech LCD/GamePanel SDK does unfortunately not return any info on error.
+//! We therefore only able report what function failed, but not why. See [Error](enum.Error.html)
 //!
 //! ## Do’s and Don’ts
 //! These are a few guidelines that may help you implement 'better' support in your application:
@@ -44,7 +81,7 @@
 extern crate logi_lcd_sys as sys;
 
 pub use sys::{
-    LogitechLcd, LcdButton, LcdType, BitFlags,
+    LcdButton, LcdType, BitFlags, EnumFlagSize, InnerBitFlags,
     MONO_WIDTH, MONO_HEIGHT, MONO_BYTES_PER_PIXEL,
     COLOR_WIDTH, COLOR_HEIGHT, COLOR_BYTES_PER_PIXEL
 };
@@ -56,36 +93,53 @@ use std::ffi::OsStr;
 
 static INITIALIZED: AtomicBool = ATOMIC_BOOL_INIT;
 
+/// Main LCD interface
+///
+/// Initialize at start of your program. Can Be initialized with color support,
+/// monochrome support and both. Will automatically disconnect when the Lcd is dropped.
 pub struct Lcd {
     type_flags: BitFlags<LcdType>,
-    lib: LogitechLcd,
+    lib: sys::LogitechLcd,
 }
 
+/// Runtime LCD error
+///
+/// The underling Logitech LCD/GamePanel SDK does unfortunately not return any info on error.
+/// We therefore only able report what function failed, but not why.
 #[derive(Debug)]
 pub enum Error {
+    /// A logitech LCD is not connected to the system.
     NotConnected,
+    /// FFI call to LogiLcdInit() in LogitechLcd.dll has failed.
     Initialization,
+    /// FFI call to LogiLcdMonoSetBackground() in LogitechLcd.dll has failed.
     MonoBackground,
+    /// FFI call to LogiLcdMonoSetText() in LogitechLcd.dll has failed.
     MonoText,
+    /// FFI call to LogiLcdColorSetBackground() in LogitechLcd.dll has failed.
     ColorBackground,
+    /// FFI call to LogiLcdColorSetTitle() in LogitechLcd.dll has failed.
     ColorTitle,
+    /// FFI call to LogiLcdColorSetText() in LogitechLcd.dll has failed.
     ColorText,
+    /// Unexpected NULL character
     NullCharacter,
+    /// Failed to load LogitechLcd.dll.
     LoadLibrary(Box<std::error::Error>),
 }
 
 impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::NotConnected    => "LCD is not connected",
-            Error::Initialization  => "A FFI call to LogiLcdInit() has failed",
-            Error::MonoBackground  => "A FFI call to LogiLcdMonoSetBackground() has failed",
-            Error::MonoText        => "A FFI call to LogiLcdMonoSetText() has failed",
-            Error::ColorBackground => "A FFI call to LogiLcdColorSetBackground() has failed",
-            Error::ColorTitle      => "A FFI call to LogiLcdColorSetTitle() has failed",
-            Error::ColorText       => "A FFI call to LogiLcdColorSetText() has failed",
-            Error::NullCharacter   => "Unexpected NULL character",
-            Error::LoadLibrary(_)  => "Failed to load dynamic library",
+            Error::NotConnected    => "A logitech LCD is not connected to the system.",
+            Error::Initialization  => "FFI call to LogiLcdInit() in LogitechLcd.dll has failed.",
+            Error::MonoBackground  => "FFI call to LogiLcdMonoSetBackground() in LogitechLcd.dll has failed.",
+            Error::MonoText        => "FFI call to LogiLcdMonoSetText() in LogitechLcd.dll has failed.",
+            Error::ColorBackground => "FFI call to LogiLcdColorSetTitle() in LogitechLcd.dll has failed.",
+            Error::ColorTitle      => "FFI call to LogiLcdColorSetTitle() in LogitechLcd.dll has failed.",
+            Error::ColorText       => "FFI call to LogiLcdColorSetText() in LogitechLcd.dll has failed.",
+            Error::NullCharacter   => "Unexpected NULL character.",
+            Error::LoadLibrary(_)  => "Failed to load LogitechLcd.dll",
         }
     }
 }
@@ -94,7 +148,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use std::error::Error;
         match self.cause() {
-            Some(c) => write!(f, "LcdError: {}, Cause: {}", self.description(), c.description()),
+            Some(c) => write!(f, "{}, Cause: {}", self.description(), c.description()),
             None => write!(f, "LcdError: {}", self.description()),
         }
     }
@@ -110,11 +164,12 @@ fn str_to_wchar_checked(s: &str) -> Result<Vec<u16>, Error> {
     Ok(OsStr::new(s).encode_wide().chain(Some(0)).collect::<Vec<u16>>())
 }
 
+
 impl Lcd {
     fn init(app_name: &str, type_flags: BitFlags<LcdType>) -> Result<Lcd, Error> {
         assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
 
-        let lib = LogitechLcd::load().map_err(|e| Error::LoadLibrary(Box::new(e)))?;
+        let lib = sys::LogitechLcd::load().map_err(|e| Error::LoadLibrary(Box::new(e)))?;
 
         let ws = str_to_wchar_checked(app_name)?;
 
@@ -142,11 +197,11 @@ impl Lcd {
 
     /// Initialize and connect to a monochrome lcd device.
     ///
-    /// ### Parameters:
-    /// - app_name: The name of your applet.
+    /// ##### Parameters:
+    /// - **app_name**: The name of your applet.
     ///
-    /// ### Panics
-    /// Will panic if another lcd instance exits.
+    /// ##### Panics:
+    /// - If another Lcd instance is alive.
     ///
     pub fn init_mono(app_name: &str) -> Result<Lcd, Error>  {
         Self::init(app_name, LcdType::MONO.into())
@@ -154,11 +209,11 @@ impl Lcd {
 
     /// Initialize and connect to a color lcd device.
     ///
-    /// ### Parameters:
-    /// - app_name: The name of your applet.
+    /// ##### Parameters:
+    /// - **app_name**: The name of your applet.
     ///
-    /// ### Panics
-    /// Will panic if another lcd instance exits.
+    /// ##### Panics
+    /// - If another Lcd instance is alive.
     ///
     pub fn init_color(app_name: &str) -> Result<Lcd, Error>  {
         Self::init(app_name, LcdType::COLOR.into())
@@ -166,11 +221,11 @@ impl Lcd {
 
     /// Initialize and connect to either a monochrome or color lcd device.
     ///
-    /// ### Parameters:
-    /// - app_name: The name of your applet.
+    /// ##### Parameters:
+    /// - **app_name**: The name of your applet.
     ///
-    /// ### Panics
-    /// Will panic if another lcd instance exits.
+    /// ##### Panics
+    /// - If another Lcd instance is alive.
     ///
     pub fn init_either(app_name: &str) -> Result<Lcd, Error> {
         Self::init(app_name, LcdType::either())
@@ -178,8 +233,8 @@ impl Lcd {
 
     /// Checks if the device is connected.
     ///
-    /// ### Return value:
-    /// If a device supporting the lcd type specified is found, it returns `true`. Otherwise `false`
+    /// ##### Return value:
+    /// If a device supporting the lcd type specified is found, it returns `true`, otherwise `false`
     ///
     pub fn is_connected(&self) -> bool {
         unsafe {
@@ -189,7 +244,7 @@ impl Lcd {
 
     /// Updates the lcd display.
     ///
-    /// ### Notes:
+    /// ##### Notes:
     /// You have to call this function every frame of your main loop, to keep the lcd updated.
     ///
     pub fn update(&mut self) {
@@ -200,38 +255,36 @@ impl Lcd {
 
     /// Checks if the buttons specified by the parameter are being pressed.
     ///
-    /// ### Return value:
-    /// If the button specified is being pressed it returns `true`. Otherwise `false`
+    /// ##### Return value:
+    /// If the buttons specified are being pressed it returns `true`, otherwise `false`.
     ///
-    /// ### Notes:
+    /// ##### Notes:
     /// The button will be considered pressed only if your applet is the one currently in the foreground.
     ///
-    pub fn is_mono_buttons_pressed(&self, buttons: BitFlags<LcdButton>) -> bool {
-        assert!(!(self.type_flags | LcdType::MONO).is_empty());
-
+    pub fn is_button_pressed(&self, buttons: BitFlags<LcdButton>) -> bool {
         unsafe {
-            (self.lib.LogiLcdIsButtonPressed)((buttons & LcdButton::mono()).bits())
+            (self.lib.LogiLcdIsButtonPressed)(buttons.bits())
         }
     }
 
     /// Sets the specified image as background for the monochrome lcd device.
     ///
-    /// ### Parameters:
-    /// - bytemap: The image data is organized as a rectangular area, 160 bytes wide and 43
+    /// ##### Parameters:
+    /// - **mono_bitmap**: The image data is organized as a rectangular area, 160 bytes wide and 43
     /// bytes high. Despite the display being monochrome, 8 bits per pixel are used
-    /// here for simple manipulation of individual pixels. The SDK will turn on the
-    /// pixel on the screen if the value assigned to that byte is >= 128, it will
-    /// remain off if the value is < 128.
+    /// here for simple manipulation of individual pixels. A pixel will turn on the
+    /// if the value assigned to that byte is >= 128, it will remain off if the value is < 128.
     ///
-    /// ### Panics
-    /// Will panic if bytemaps size is not 160x43bytes long.
+    /// ##### Panics
+    /// - If mono_bitmap's length is not 160x43 bytes.
+    /// - If Lcd was initialized without mono support.
     ///
-    pub fn set_mono_background(&mut self, bytemap: &[u8]) -> Result<(), Error> {
+    pub fn set_mono_background(&mut self, mono_bitmap: &[u8]) -> Result<(), Error> {
         assert!(!(self.type_flags | LcdType::MONO).is_empty());
-        assert_eq!(bytemap.len(), MONO_WIDTH * MONO_HEIGHT);
+        assert_eq!(mono_bitmap.len(), MONO_WIDTH * MONO_HEIGHT);
 
         unsafe {
-            match (self.lib.LogiLcdMonoSetBackground)(bytemap.as_ptr()) {
+            match (self.lib.LogiLcdMonoSetBackground)(mono_bitmap.as_ptr()) {
                 true => Ok(()),
                 false => Err(Error::MonoBackground),
             }
@@ -240,13 +293,14 @@ impl Lcd {
 
     /// Sets the specified text in the requested line on the monochrome lcd device.
     ///
-    /// ### Parameters:
-    /// - line_number: The line on the screen you want the text to appear. The monochrome lcd display
+    /// ##### Parameters:
+    /// - **line_number**: The line on the screen you want the text to appear. The monochrome lcd display
     ///   has 4 lines, so this parameter can be any number from 0 to 3.
-    /// - text: Defines the text you want to display
+    /// - **text**: Defines the text you want to display
     ///
-    /// ### Panics
-    /// Will panic if line_number larger than or equal to 4.
+    /// ##### Panics
+    /// - If line_number larger than or equal to 4.
+    /// - If Lcd was initialized without mono support.
     ///
     pub fn set_mono_text(&mut self, line_number: usize, text: &str) -> Result<(), Error> {
         assert!(!(self.type_flags | LcdType::MONO).is_empty());
@@ -262,34 +316,40 @@ impl Lcd {
         }
     }
 
-    /// Checks if the buttons specified by the parameter are being pressed.
+    /// Sets the specified image as background for the color lcd device connected.
     ///
-    /// ### Return value:
-    /// If the button specified is being pressed it returns `true`. Otherwise `false`
+    /// ##### Parameters:
+    /// - **color_bitmap**: ARGB color bitmap, full RGB gamma, 8-bit per channel,
+    /// 320 pixels wide and 240 pixels high, 32 bits per pixel(4 bytes).
     ///
-    /// ### Notes:
-    /// The button will be considered pressed only if your applet is the one currently in the foreground.
+    /// ##### Panics
+    /// - If color_bitmap's length is not 320x240x4 bytes.
+    /// - If Lcd was initialized without color support.
     ///
-    pub fn is_color_buttons_pressed(&self, buttons: BitFlags<LcdButton>) -> bool {
+    pub fn set_color_background(&mut self, color_bitmap: &[u8]) -> Result<(), Error> {
         assert!(!(self.type_flags | LcdType::COLOR).is_empty());
+        assert_eq!(color_bitmap.len(), COLOR_WIDTH * COLOR_HEIGHT * COLOR_BYTES_PER_PIXEL);
 
         unsafe {
-            (self.lib.LogiLcdIsButtonPressed)((buttons & LcdButton::color()).bits())
-        }
-    }
-
-    pub fn set_color_background(&mut self, bitmap: &[u8]) -> Result<(), Error> {
-        assert!(!(self.type_flags | LcdType::COLOR).is_empty());
-        assert_eq!(bitmap.len(), COLOR_WIDTH * COLOR_HEIGHT * COLOR_BYTES_PER_PIXEL);
-
-        unsafe {
-            match (self.lib.LogiLcdColorSetBackground)(bitmap.as_ptr()) {
+            match (self.lib.LogiLcdColorSetBackground)(color_bitmap.as_ptr()) {
                 true => Ok(()),
                 false => Err(Error::ColorBackground),
             }
         }
     }
 
+    /// Sets the specified text in the first line on the color lcd device connected.
+    /// The font size that will be displayed is bigger than the one used in the other lines,
+    /// so you can use this function to set the title of your applet/page.
+    ///
+    /// ##### Parameters:
+    /// - **text**: Defines the text you want to display as title.
+    /// - **red, green, blue**: The LCD can display a full RGB color, you can define the color
+    /// of your title using these parameters.
+    ///
+    /// ##### Panics
+    /// - If Lcd was initialized without color support.
+    ///
     pub fn set_color_title(&mut self, text: &str, red: u8, green: u8, blue: u8)
         -> Result<(), Error>
     {
@@ -306,6 +366,19 @@ impl Lcd {
         }
     }
 
+    /// Sets the specified text in the requested line on the color lcd device connected.
+    ///
+    /// ##### Parameters:
+    /// - **line_number**: The line on the screen you want the text to appear. The color lcd display
+    /// has 8 lines, or standard text, so this parameter can be any number from 0 to 7
+    /// - **text**: Defines the text you want to display as title.
+    /// - **red, green, blue**: The LCD can display a full RGB color, you can define the color
+    /// of your title using these parameters.
+    ///
+    /// ##### Panics
+    /// - If line_number larger than or equal to 8.
+    /// - If Lcd was initialized without color support.
+    ///
     pub fn set_color_text(&mut self, line_number: usize, text: &str,
         red: u8, green: u8, blue: u8) -> Result<(), Error>
     {
