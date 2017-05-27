@@ -1,9 +1,9 @@
 [package]
-name = "logi-lcd"
+name = "logitech-lcd"
 version = "0.1.0"
 authors = ["Henning Ottesen <henning@live.no>"]
 
 # [dependencies] should be [target.'cfg(windows)'.dependencies], but that doesn't work for some reason.
 # Needs to be fixed if we want to add support for 3d party drivers on Linux adn OSX.
 [dependencies]
-logi-lcd-sys = {path = "logi-lcd-sys"}
+logitech-lcd-sys = {path = "logitech-lcd-sys"}

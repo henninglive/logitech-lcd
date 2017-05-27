@@ -1,6 +1,6 @@
-extern crate logi_lcd;
+extern crate logitech_lcd;
 
-use logi_lcd::{Lcd, MONO_WIDTH, MONO_HEIGHT};
+use logitech_lcd::{Lcd, MONO_WIDTH, MONO_HEIGHT};
 use std::sync::Arc;
 use std::thread;
 use std::iter;

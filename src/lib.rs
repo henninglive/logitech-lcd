@@ -1,6 +1,6 @@
 #![warn(missing_docs)]
-//! # logi-lcd
-//! logi-lcd provides binding for the [Logitech Gaming LCD/Gamepanel SDK]
+//! # logitech-lcd
+//! logitech-lcd provides binding for the [Logitech Gaming LCD/Gamepanel SDK]
 //! (http://gaming.logitech.com/en-us/developers).
 //!
 //! ## Overview
@@ -18,7 +18,7 @@
 //!
 //! ### Monochrome
 //! ```no_run
-//! let mut lcd = logi_lcd::Lcd::init_mono("My Glorious Monochrome App").unwrap();
+//! let mut lcd = logitech_lcd::Lcd::init_mono("My Glorious Monochrome App").unwrap();
 //!
 //! for i in 0..{
 //!     lcd.set_mono_text(0, &format!("update:{}", i)[..]).unwrap();
@@ -30,7 +30,7 @@
 //! ```
 //! ### Color
 //! ```no_run
-//! let mut lcd = logi_lcd::Lcd::init_color("My Glorious Color App").unwrap();
+//! let mut lcd = logitech_lcd::Lcd::init_color("My Glorious Color App").unwrap();
 //!
 //! for i in 0..{
 //!     lcd.set_color_text(0, &format!("update:{}", i)[..], i as u8,
@@ -44,7 +44,7 @@
 //! ```
 //! ### Monochrome and Color
 //! ```no_run
-//! let mut lcd = logi_lcd::Lcd::init_either("My Glorious App").unwrap();
+//! let mut lcd = logitech_lcd::Lcd::init_either("My Glorious App").unwrap();
 //!
 //! for i in 0..{
 //!     lcd.set_mono_text(0,  &format!("update:{}", i)[..]).unwrap();
@@ -78,7 +78,7 @@
 //! - Use the buttons to create multiple pages or add functionality to the LCD.
 //!
 
-extern crate logi_lcd_sys as sys;
+extern crate logitech_lcd_sys as sys;
 
 pub use sys::{
     LcdButton, LcdType, BitFlags, EnumFlagSize, InnerBitFlags,

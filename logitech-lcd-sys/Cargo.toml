@@ -1,8 +1,8 @@
 [package]
-name = "logi-lcd-sys"
+name = "logitech-lcd-sys"
 version = "0.1.0"
 authors = ["Henning Ottesen <henning@live.no>"]
-description = "Loader and FFI bindings for the Logitech LCD SDK."
+description = "FFI bindings and loader for the Logitech LCD SDK"
 
 [dependencies]
 enumflags = "0.1.2"

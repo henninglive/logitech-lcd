@@ -1,5 +1,5 @@
-# logi-lcd
-[![Build status](https://ci.appveyor.com/api/projects/status/yeblonuvclkd7n9e?svg=true)](https://ci.appveyor.com/project/henninglive/logi-lcd)
+# logitech-lcd
+[![Build status](https://ci.appveyor.com/api/projects/status/yeblonuvclkd7n9e?svg=true)](https://ci.appveyor.com/project/henninglive/logitech-lcd)
 
 FFI bindings for the [Logitech Gaming LCD/Gamepanel SDK](http://gaming.logitech.com/en-us/developers)
 
@@ -40,12 +40,14 @@ Set LOGITECH_LCD_COPY_OUT=TRUE
 ## Example usage
 ### Mono LCD
 ```rust
-extern crate logi_lcd;
-use logi_lcd::MonoLcd;
+extern crate logitech_lcd;
+use logitech_lcd::MonoLcd;
 
 fn main() {
     let mut lcd = MonoLcd::connect("Hello World").unwrap();
+
     lcd.set_text(0, "Hello World!").unwrap();
+
     lcd.update();
 
     std::thread::sleep(std::time::Duration::from_millis(5000));

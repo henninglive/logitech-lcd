@@ -1,6 +1,6 @@
-extern crate logi_lcd;
+extern crate logitech_lcd;
 
-use logi_lcd::{Lcd, MONO_WIDTH, MONO_HEIGHT};
+use logitech_lcd::{Lcd, MONO_WIDTH, MONO_HEIGHT};
 
 fn main() {
     let mut lcd = Lcd::init_mono("Blink").unwrap();
