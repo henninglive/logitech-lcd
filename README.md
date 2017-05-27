@@ -1,5 +1,5 @@
 # logitech-lcd
-[![Build status](https://ci.appveyor.com/api/projects/status/yeblonuvclkd7n9e?svg=true)](https://ci.appveyor.com/project/henninglive/logitech-lcd)
+[![Build status](https://ci.appveyor.com/api/projects/status/sf8ladr0v2pdqigd?svg=true)](https://ci.appveyor.com/project/henninglive/logitech-lcd)
 
 FFI bindings for the [Logitech Gaming LCD/Gamepanel SDK](http://gaming.logitech.com/en-us/developers)
 

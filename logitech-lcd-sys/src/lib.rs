@@ -18,11 +18,22 @@ use std::os::raw::{c_int, c_uint};
 use std::os::windows::ffi::OsStrExt;
 use std::ffi::OsStr;
 
+/// Monochrome screen, pixel witdh
 pub const MONO_WIDTH:  usize = 160;
+
+/// Monochrome screen, pixel hight
 pub const MONO_HEIGHT: usize = 43;
+
+/// Monochrome screen, bytes per pixel
 pub const MONO_BYTES_PER_PIXEL: usize = 1;
+
+/// Color screen, pixel witdh
 pub const COLOR_WIDTH:  usize = 320;
+
+/// Color screen, pixel hight
 pub const COLOR_HEIGHT: usize = 240;
+
+/// Color screen, bytes per pixel
 pub const COLOR_BYTES_PER_PIXEL: usize = 4;
 
 /// Bitflags for specifying LCD types, combine with [BitFlags](struct.BitFlags.html)

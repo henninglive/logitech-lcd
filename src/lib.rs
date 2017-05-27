@@ -1,5 +1,5 @@
 #![warn(missing_docs)]
-//! # logitech-lcd
+
 //! logitech-lcd provides binding for the [Logitech Gaming LCD/Gamepanel SDK]
 //! (http://gaming.logitech.com/en-us/developers).
 //!
@@ -9,7 +9,7 @@
 //! The SDK enables integration of GamePanel functionality within your code.
 //!
 //! ## Lcd Interface
-//! The SDK interface is implemented by the [Lcd](struct.Lcd.html) struct. Create a new
+//! The SDK interface is implemented by the [Lcd struct](struct.Lcd.html). Create a new
 //! [Lcd](struct.Lcd.html) at start of program. Update the screen with the provided methods.
 //! The [Lcd](struct.Lcd.html) will automatically disconnect when the [Lcd](struct.Lcd.html)
 //! is dropped.
@@ -40,7 +40,6 @@
 //!
 //!     std::thread::sleep(std::time::Duration::from_millis(15));
 //! }
-//! std::thread::sleep(std::time::Duration::from_millis(1000));
 //! ```
 //! ### Monochrome and Color
 //! ```no_run
