@@ -80,7 +80,7 @@
 extern crate logitech_lcd_sys as sys;
 
 pub use sys::{
-    LcdButton, LcdType, BitFlags, EnumFlagSize, InnerBitFlags,
+    LcdButton, BitFlags, EnumFlagSize, InnerBitFlags,
     MONO_WIDTH, MONO_HEIGHT, MONO_BYTES_PER_PIXEL,
     COLOR_WIDTH, COLOR_HEIGHT, COLOR_BYTES_PER_PIXEL
 };
@@ -97,7 +97,7 @@ static INITIALIZED: AtomicBool = ATOMIC_BOOL_INIT;
 /// Initialize at start of your program. Can Be initialized with color support,
 /// monochrome support and both. Will automatically disconnect when the Lcd is dropped.
 pub struct Lcd {
-    type_flags: BitFlags<LcdType>,
+    type_flags: BitFlags<sys::LcdType>,
     lib: sys::LogitechLcd,
 }
 
@@ -165,7 +165,7 @@ fn str_to_wchar_checked(s: &str) -> Result<Vec<u16>, Error> {
 
 
 impl Lcd {
-    fn init(app_name: &str, type_flags: BitFlags<LcdType>) -> Result<Lcd, Error> {
+    fn init(app_name: &str, type_flags: BitFlags<sys::LcdType>) -> Result<Lcd, Error> {
         assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
 
         let lib = sys::LogitechLcd::load().map_err(|e| Error::LoadLibrary(Box::new(e)))?;
@@ -203,7 +203,7 @@ impl Lcd {
     /// - If another Lcd instance is alive.
     ///
     pub fn init_mono(app_name: &str) -> Result<Lcd, Error>  {
-        Self::init(app_name, LcdType::MONO.into())
+        Self::init(app_name, sys::LcdType::MONO.into())
     }
 
     /// Initialize and connect to a color lcd device.
@@ -215,7 +215,7 @@ impl Lcd {
     /// - If another Lcd instance is alive.
     ///
     pub fn init_color(app_name: &str) -> Result<Lcd, Error>  {
-        Self::init(app_name, LcdType::COLOR.into())
+        Self::init(app_name, sys::LcdType::COLOR.into())
     }
 
     /// Initialize and connect to either a monochrome or color lcd device.
@@ -227,7 +227,7 @@ impl Lcd {
     /// - If another Lcd instance is alive.
     ///
     pub fn init_either(app_name: &str) -> Result<Lcd, Error> {
-        Self::init(app_name, LcdType::either())
+        Self::init(app_name, sys::LcdType::either())
     }
 
     /// Checks if the device is connected.
@@ -279,7 +279,7 @@ impl Lcd {
     /// - If Lcd was initialized without mono support.
     ///
     pub fn set_mono_background(&mut self, mono_bitmap: &[u8]) -> Result<(), Error> {
-        assert!(!(self.type_flags | LcdType::MONO).is_empty());
+        assert!(!(self.type_flags | sys::LcdType::MONO).is_empty());
         assert_eq!(mono_bitmap.len(), MONO_WIDTH * MONO_HEIGHT);
 
         unsafe {
@@ -302,7 +302,7 @@ impl Lcd {
     /// - If Lcd was initialized without mono support.
     ///
     pub fn set_mono_text(&mut self, line_number: usize, text: &str) -> Result<(), Error> {
-        assert!(!(self.type_flags | LcdType::MONO).is_empty());
+        assert!(!(self.type_flags | sys::LcdType::MONO).is_empty());
 
         let ws = str_to_wchar_checked(text)?;
         assert!(line_number < 4);
@@ -326,7 +326,7 @@ impl Lcd {
     /// - If Lcd was initialized without color support.
     ///
     pub fn set_color_background(&mut self, color_bitmap: &[u8]) -> Result<(), Error> {
-        assert!(!(self.type_flags | LcdType::COLOR).is_empty());
+        assert!(!(self.type_flags | sys::LcdType::COLOR).is_empty());
         assert_eq!(color_bitmap.len(), COLOR_WIDTH * COLOR_HEIGHT * COLOR_BYTES_PER_PIXEL);
 
         unsafe {
@@ -352,7 +352,7 @@ impl Lcd {
     pub fn set_color_title(&mut self, text: &str, red: u8, green: u8, blue: u8)
         -> Result<(), Error>
     {
-        assert!(!(self.type_flags | LcdType::COLOR).is_empty());
+        assert!(!(self.type_flags | sys::LcdType::COLOR).is_empty());
         let ws = str_to_wchar_checked(text)?;
 
         unsafe {
@@ -381,7 +381,7 @@ impl Lcd {
     pub fn set_color_text(&mut self, line_number: usize, text: &str,
         red: u8, green: u8, blue: u8) -> Result<(), Error>
     {
-        assert!(!(self.type_flags | LcdType::COLOR).is_empty());
+        assert!(!(self.type_flags | sys::LcdType::COLOR).is_empty());
 
         let ws = str_to_wchar_checked(text)?;
         assert!(line_number < 8);
