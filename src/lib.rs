@@ -124,7 +124,7 @@ pub enum Error {
     /// Unexpected NULL character
     NullCharacter,
     /// Failed to load LogitechLcd.dll.
-    LoadLibrary(Box<std::error::Error>),
+    LoadLibrary(std::io::Error),
 }
 
 impl std::error::Error for Error {
@@ -141,13 +141,20 @@ impl std::error::Error for Error {
             Error::LoadLibrary(_)  => "Failed to load LogitechLcd.dll",
         }
     }
+
+    fn cause(&self) -> Option<&std::error::Error> {
+        match *self {
+            Error::LoadLibrary(ref e) => Some(e),
+            _ => None,
+        }
+    }
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use std::error::Error;
         match self.cause() {
-            Some(c) => write!(f, "{}, Cause: {}", self.description(), c.description()),
+            Some(c) => write!(f, "LcdError: {}, Cause: {}", self.description(), c.description()),
             None => write!(f, "LcdError: {}", self.description()),
         }
     }
@@ -168,7 +175,7 @@ impl Lcd {
     fn init(app_name: &str, type_flags: BitFlags<sys::LcdType>) -> Result<Lcd, Error> {
         assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
 
-        let lib = sys::LogitechLcd::load().map_err(|e| Error::LoadLibrary(Box::new(e)))?;
+        let lib = sys::LogitechLcd::load().map_err(|e| Error::LoadLibrary(e))?;
 
         let ws = str_to_wchar_checked(app_name)?;
 
