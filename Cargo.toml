@@ -7,3 +7,6 @@ authors = ["Henning Ottesen <henning@live.no>"]
 # Needs to be fixed if we want to add support for 3d party drivers on Linux adn OSX.
 [dependencies]
 logitech-lcd-sys = {path = "logitech-lcd-sys"}
+
+[dev-dependencies]
+image = "0.13.0"
