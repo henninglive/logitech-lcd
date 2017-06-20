@@ -87,8 +87,6 @@ pub use sys::{
 
 use std::sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT};
 use std::os::raw::c_int;
-use std::os::windows::ffi::OsStrExt;
-use std::ffi::OsStr;
 
 static INITIALIZED: AtomicBool = ATOMIC_BOOL_INIT;
 
@@ -160,7 +158,11 @@ impl std::fmt::Display for Error {
     }
 }
 
+#[cfg(target_os = "windows")]
 fn str_to_wchar_checked(s: &str) -> Result<Vec<u16>, Error> {
+    use std::os::windows::ffi::OsStrExt;
+    use std::ffi::OsStr;
+
     // Check for null character
     if s.chars().any(|c| c as u32 == 0) {
         return Err(Error::NullCharacter);
@@ -170,6 +172,11 @@ fn str_to_wchar_checked(s: &str) -> Result<Vec<u16>, Error> {
     Ok(OsStr::new(s).encode_wide().chain(Some(0)).collect::<Vec<u16>>())
 }
 
+
+#[cfg(not(target_os = "windows"))]
+fn str_to_wchar_checked(_: &str) -> Result<Vec<u16>, Error> {
+    unimplemented!();
+}
 
 impl Lcd {
     fn init(app_name: &str, type_flags: BitFlags<sys::LcdType>) -> Result<Lcd, Error> {
