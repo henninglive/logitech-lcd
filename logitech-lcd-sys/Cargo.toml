@@ -1,8 +1,12 @@
 [package]
 name = "logitech-lcd-sys"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Henning Ottesen <henning@live.no>"]
-description = "FFI bindings and loader for the Logitech LCD SDK"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/henninglive/logitech-lcd/tree/master/logitech-lcd-sys"
+homepage = "https://github.com/henninglive/logitech-lcd/tree/master/logitech-lcd-sys"
+documentation = "https://docs.rs/logitech-lcd-sys/1.0.0/"
+description = "FFI bindings and loader for the Logitech LCD SDK."
 
 [dependencies]
 enumflags = "0.1.2"
