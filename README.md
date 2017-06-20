@@ -1,10 +1,14 @@
 # logitech-lcd
 [![Build status](https://ci.appveyor.com/api/projects/status/sf8ladr0v2pdqigd?svg=true)](https://ci.appveyor.com/project/henninglive/logitech-lcd)
+[![crates.io](https://img.shields.io/crates/v/logitech-lcd.svg)](https://crates.io/crates/logitech-lcd)
+[![docs.rs](https://docs.rs/logitech-lcd/badge.svg)](https://docs.rs/logitech-lcd/)
 
 Rust bindings for the [Logitech Gaming LCD/Gamepanel SDK][SDK]
 
 ## Overview
 The Logitech LCD/GamePanel SDK introduces second screen capability that allows GamePanel-enabled Logitech gaming keyboards to display in-game info, system statistics, and more. The SDK enables integration of GamePanel functionality within your code.
+
+[Documentation](https://docs.rs/logitech-lcd/)
 
 ## Supported Devices
 - G19 - 320x240 Full RGBA **(Untested)**
@@ -39,7 +43,7 @@ fn main() {
     std::thread::sleep(std::time::Duration::from_millis(5000));
 }
 ```
-![hello-world-mono](/examples/mono-hello-world.png)
+![hello-world-mono](https://github.com/henninglive/logitech-lcd/raw/master/examples/mono-hello-world.png)
 
 ### Hello World Color
 ```rust
@@ -66,19 +70,19 @@ fn main() {
     std::thread::sleep(std::time::Duration::from_millis(10000));
 }
 ```
-![hello-world-color](/examples/color-hello-world.png)
+![hello-world-color](https://github.com/henninglive/logitech-lcd/raw/master/examples/color-hello-world.png)
 
 The artifacts should only be visible in the emulator.
 
 ### Monochrome Image
-[`/examples/mono-image.rs`](/examples/mono-image.rs)
+[`/examples/mono-image.rs`](https://github.com/henninglive/logitech-lcd/raw/master/examples/mono-image.rs)
 
-![image-mono](/examples/mono-image.png)
+![image-mono](https://github.com/henninglive/logitech-lcd/raw/master/examples/mono-image.png)
 
 ### Color Image
-[`/examples/color-image.rs`](/examples/color-image.rs)
+[`/examples/color-image.rs`](https://github.com/henninglive/logitech-lcd/raw/master/examples/color-image.rs)
 
-![image-color](/examples/color-image.png)
+![image-color](https://github.com/henninglive/logitech-lcd/raw/master/examples/color-image.png)
 
 ## License
 ### Code
