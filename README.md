@@ -26,7 +26,7 @@ The Logitech Gaming Software comes with an LCD emulator. You can access it by go
 - **[Logitech Gaming Software][LGS]**
 
 ### Dynamic Loading
-This crate will try to locate and load `LogitechLcd.dll` at runtime. We start by looking up the `CLSID` in the Windows registry, if it’s found we load the library with call to [`LoadLibrary()`][LoadLibrary] with the full path. If it’s fails we call [`LoadLibrary()`][LoadLibrary] with just the DLL name. This will search your `PATH` for the library.
+This crate will try to locate and load `LogitechLcd.dll` at runtime. We start by looking up the `CLSID` in the Windows registry, if it’s found we load the library with a call to [`LoadLibrary()`][LoadLibrary] with the full path. If it fails we call [`LoadLibrary()`][LoadLibrary] with just the DLL name. This will search your `PATH` for the library.
 
 ## Examples
 ### Hello World Monochrome
