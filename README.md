@@ -1,7 +1,7 @@
 # logitech-lcd
 [![Build status](https://ci.appveyor.com/api/projects/status/sf8ladr0v2pdqigd?svg=true)](https://ci.appveyor.com/project/henninglive/logitech-lcd)
 
-FFI bindings for the [Logitech Gaming LCD/Gamepanel SDK](http://gaming.logitech.com/en-us/developers)
+FFI bindings for the [Logitech Gaming LCD/Gamepanel SDK][SDK]
 
 ## Overview
 The Logitech LCD/GamePanel SDK introduces second screen capability that allows GamePanel-enabled Logitech gaming keyboards to display in-game info, system statistics, and more. The SDK enables integration of GamePanel functionality within your code.
@@ -18,24 +18,11 @@ The Logitech LCD/GamePanel SDK introduces second screen capability that allows G
 ### LCD Emulator
 The Logitech Gaming Software comes with an LCD emulator. You can access it by going to your task bar tray `CTRL + SHIFT + RIGHT CLICK` on Logitech Gaming Software tray icon and press "LCD Emulator"
 
-## Building
-### Requirements
-- **[Logitech Gaming Software](http://support.logitech.com/en_us/software/lgs)**
+## Requirements
+- **[Logitech Gaming Software][LGS]**
 
-### Linking
-The build script will try to locate your Logitech Gaming Software install and link to the appropriate binaries. You can override this behavior and manually pointing to your SDK install with `LOGITECH_LCD_LIB_DIR` environment variable.
-```cmd
-Set LOGITECH_LCD_LIB_DIR=C:\Logitech\LCDSDK
-```
-You can also download the standalone SDK from [here](http://gaming.logitech.com/en-us/developers) if you want to build this library without installing the Logitech Gaming Software. The standalone SDK comes with a `LogitechLcdEnginesWrapper.dll` witch is import wrapper around `LogitechLcd.dll` witch comes with the Logitech Gaming Software. To link against the wrapper, you need to change its name to `LogitechLcd.dll` and point to it with the `LOGITECH_LCD_LIB_DIR` environment variable.
-
-Do not link against the `.lib` files provided with standalone SDK, they contain mangled symbols. The build script will automatically create `.lib` import librares for MSVC builds.
-
-### Copy to DLL to output 
-Tell the build script to copy the LogitechLcd.dll to the target directory by setting the `LOGITECH_LCD_COPY_OUT` environment variable. The Logitech Gaming Software does not add the SDK binaries to PATH. Coping the DLL to the target directory allows your output binary to find the DLL.
-```cmd
-Set LOGITECH_LCD_COPY_OUT=TRUE
-```
+### Dynamic Loading
+This crate will try to locate and load `LogitechLcd.dll` at runtime. We start by looking up the `CLSID` in the Windows registry, if it’s found we load the library with call to [`LoadLibrary()`][LoadLibrary] with the full path. If it’s fails we call [`LoadLibrary()`][LoadLibrary] with just the DLL name. This will search your `PATH` for the library.
 
 ## Example usage
 ### Mono LCD
@@ -68,3 +55,7 @@ The Rust and Cargo logos (bitmap and vector) are owned by Mozilla and distribute
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you shall be dual licensed as above, without any
 additional terms or conditions.
+
+[SDK]: http://gaming.logitech.com/en-us/developers
+[LGS]: http://support.logitech.com/en_us/software/lgs
+[LoadLibrary]: https://msdn.microsoft.com/en-us/library/windows/desktop/ms684175.aspx
