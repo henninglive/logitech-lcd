@@ -1,7 +1,7 @@
 # logitech-lcd
 [![Build status](https://ci.appveyor.com/api/projects/status/sf8ladr0v2pdqigd?svg=true)](https://ci.appveyor.com/project/henninglive/logitech-lcd)
 
-FFI bindings for the [Logitech Gaming LCD/Gamepanel SDK][SDK]
+Rust bindings for the [Logitech Gaming LCD/Gamepanel SDK][SDK]
 
 ## Overview
 The Logitech LCD/GamePanel SDK introduces second screen capability that allows GamePanel-enabled Logitech gaming keyboards to display in-game info, system statistics, and more. The SDK enables integration of GamePanel functionality within your code.
@@ -24,8 +24,8 @@ The Logitech Gaming Software comes with an LCD emulator. You can access it by go
 ### Dynamic Loading
 This crate will try to locate and load `LogitechLcd.dll` at runtime. We start by looking up the `CLSID` in the Windows registry, if it’s found we load the library with call to [`LoadLibrary()`][LoadLibrary] with the full path. If it’s fails we call [`LoadLibrary()`][LoadLibrary] with just the DLL name. This will search your `PATH` for the library.
 
-## Example usage
-### Mono LCD
+## Examples
+### Hello World Monochrome
 ```rust
 extern crate logitech_lcd;
 use logitech_lcd::Lcd;
@@ -39,8 +39,9 @@ fn main() {
     std::thread::sleep(std::time::Duration::from_millis(5000));
 }
 ```
+![hello-world-mono](/examples/mono-hello-world.png)
 
-### Color LCD
+### Hello World Color
 ```rust
 extern crate logitech_lcd;
 use logitech_lcd::{Lcd, COLOR_WIDTH, COLOR_HEIGHT, COLOR_BYTES_PER_PIXEL};
@@ -65,6 +66,19 @@ fn main() {
     std::thread::sleep(std::time::Duration::from_millis(10000));
 }
 ```
+![hello-world-color](/examples/color-hello-world.png)
+
+The artifacts should only be visible in the emulator.
+
+### Monochrome Image
+[`/examples/mono-image.rs`](/examples/mono-image.rs)
+
+![image-mono](/examples/mono-image.png)
+
+### Color Image
+[`/examples/color-image.rs`](/examples/color-image.rs)
+
+![image-color](/examples/color-image.png)
 
 ## License
 ### Code
