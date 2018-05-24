@@ -1,7 +1,7 @@
 extern crate image;
 extern crate logitech_lcd;
 
-use logitech_lcd::{Lcd, COLOR_WIDTH, COLOR_HEIGHT, COLOR_BYTES_PER_PIXEL};
+use logitech_lcd::{Lcd, COLOR_WIDTH, COLOR_HEIGHT};
 use image::{ImageFormat, ImageRgba8, Pixel, Rgba};
 
 fn load_image_into_buffer() -> Vec<u8> {
@@ -12,7 +12,7 @@ fn load_image_into_buffer() -> Vec<u8> {
     };
 
     let mut buf = std::iter::repeat(255u8)
-        .take(COLOR_WIDTH * COLOR_HEIGHT * COLOR_BYTES_PER_PIXEL)
+        .take(COLOR_WIDTH * COLOR_HEIGHT * 4)
         .collect::<Vec<u8>>();
 
     let mx = (COLOR_WIDTH  - logo_img.width()  as usize) / 2;
@@ -21,7 +21,7 @@ fn load_image_into_buffer() -> Vec<u8> {
     for p in logo_img.enumerate_pixels() {
         let x = mx + p.0 as usize;
         let y = my + p.1 as usize;
-        let i = y * COLOR_BYTES_PER_PIXEL * COLOR_WIDTH + x * COLOR_BYTES_PER_PIXEL;
+        let i = y * 4 * COLOR_WIDTH + x * 4;
         let mut b = Rgba::from_channels(buf[i+2], buf[i+1], buf[i+0], buf[i+3]);
         b.blend(p.2);
         buf[i] = b.data[2];

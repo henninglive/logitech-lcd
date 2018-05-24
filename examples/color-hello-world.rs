@@ -1,9 +1,9 @@
 extern crate logitech_lcd;
-use logitech_lcd::{Lcd, COLOR_WIDTH, COLOR_HEIGHT, COLOR_BYTES_PER_PIXEL};
+use logitech_lcd::{Lcd, COLOR_WIDTH, COLOR_HEIGHT};
 
 fn main() {
     let blank_screen = std::iter::repeat(255u8).take(
-        COLOR_WIDTH * COLOR_HEIGHT * COLOR_BYTES_PER_PIXEL).collect::<Vec<u8>>();
+        COLOR_WIDTH * COLOR_HEIGHT * 4).collect::<Vec<u8>>();
 
     let mut lcd = Lcd::init_color("Color image app").unwrap();
     lcd.set_color_background(&blank_screen[..]).unwrap();

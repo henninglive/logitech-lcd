@@ -1,3 +1,5 @@
+//! Tests if Lcd is Send.
+
 extern crate logitech_lcd;
 
 use logitech_lcd::{Lcd, MONO_WIDTH, MONO_HEIGHT};
