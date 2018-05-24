@@ -1,20 +1,26 @@
 #![allow(non_camel_case_types, non_snake_case)]
 
+//! FFI bindings and loader for the Logitech LCD SDK
+//!
+//! [LogitechLcd](struct.LogitechLcd.html) will try to locate and load
+//! `LogitechLcd.dll` at Runtime for dynamic linking.
+//!
+
 #[macro_use]
 extern crate bitflags;
 
 use std::os::raw::{c_int, c_uint};
 
-/// Monochrome screen, pixel witdh
+/// Monochrome screen width in pixels.
 pub const MONO_WIDTH:  usize = 160;
 
-/// Monochrome screen, pixel hight
+/// Monochrome screen hight in pixels.
 pub const MONO_HEIGHT: usize = 43;
 
-/// Color screen, pixel witdh
+/// Color screen witdh in pixels.
 pub const COLOR_WIDTH:  usize = 320;
 
-/// Color screen, pixel hight
+/// Color screen hight in pixels.
 pub const COLOR_HEIGHT: usize = 240;
 
 bitflags! {
