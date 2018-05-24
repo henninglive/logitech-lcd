@@ -1,10 +1,8 @@
 #![allow(non_camel_case_types, non_snake_case)]
 
 #[macro_use]
-extern crate enumflags_derive;
-extern crate enumflags;
+extern crate bitflags;
 
-pub use enumflags::{BitFlags, EnumFlagSize, InnerBitFlags};
 use std::os::raw::{c_int, c_uint};
 
 /// Monochrome screen, pixel witdh
@@ -13,69 +11,60 @@ pub const MONO_WIDTH:  usize = 160;
 /// Monochrome screen, pixel hight
 pub const MONO_HEIGHT: usize = 43;
 
-/// Monochrome screen, bytes per pixel
-pub const MONO_BYTES_PER_PIXEL: usize = 1;
-
 /// Color screen, pixel witdh
 pub const COLOR_WIDTH:  usize = 320;
 
 /// Color screen, pixel hight
 pub const COLOR_HEIGHT: usize = 240;
 
-/// Color screen, bytes per pixel
-pub const COLOR_BYTES_PER_PIXEL: usize = 4;
-
-/// Bitflags for specifying LCD types, combine with [BitFlags](struct.BitFlags.html)
-#[derive(EnumFlags, Copy, Clone, Debug)]
-#[repr(u32)]
-pub enum LcdType {
-    MONO  = 0x00000001,
-    COLOR = 0x00000002,
-}
-
-/// Bitflags for LCD Buttons, combine with [BitFlags](struct.BitFlags.html)
-#[derive(EnumFlags, Copy, Clone, Debug)]
-#[repr(u32)]
-pub enum LcdButton {
-    MONO_BUTTON_0 = 0x00000001,
-    MONO_BUTTON_1 = 0x00000002,
-    MONO_BUTTON_2 = 0x00000004,
-    MONO_BUTTON_3 = 0x00000008,
-    COLOR_BUTTON_LEFT   = 0x00000100,
-    COLOR_BUTTON_RIGHT  = 0x00000200,
-    COLOR_BUTTON_OK     = 0x00000400,
-    COLOR_BUTTON_CANCEL = 0x00000800,
-    COLOR_BUTTON_UP     = 0x00001000,
-    COLOR_BUTTON_DOWN   = 0x00002000,
-    COLOR_BUTTON_MENU   = 0x00004000,
-}
-
-impl LcdType {
-    pub fn either() -> BitFlags<LcdType> {
-        LcdType::MONO | LcdType::COLOR
+bitflags! {
+    /// Targeted lcd type.
+    ///
+    /// This library allows you to target either Mono or Color devices
+    pub struct LcdType: u32 {
+        /// Mono color.
+        const MONO =  0x00000001;
+        /// 32bit RGBA color.
+        const COLOR = 0b00000010;
+        /// Either mono or color.
+        const EITHER = Self::MONO.bits | Self::COLOR.bits;
     }
 }
 
-impl LcdButton {
-    pub fn mono() -> BitFlags<LcdButton> {
-        LcdButton::MONO_BUTTON_0 |
-        LcdButton::MONO_BUTTON_1 |
-        LcdButton::MONO_BUTTON_2 |
-        LcdButton::MONO_BUTTON_3
-    }
+bitflags! {
+    /// Lcd Button bitmap.
+    pub struct LcdButton: u32 {
+        const MONO_BUTTON_0 = 0x00000001;
+        const MONO_BUTTON_1 = 0x00000002;
+        const MONO_BUTTON_2 = 0x00000004;
+        const MONO_BUTTON_3 = 0x00000008;
+        const MONO_BUTTON = Self::MONO_BUTTON_0.bits |
+                            Self::MONO_BUTTON_1.bits |
+                            Self::MONO_BUTTON_2.bits |
+                            Self::MONO_BUTTON_3.bits;
 
-    pub fn color() -> BitFlags<LcdButton> {
-        LcdButton::COLOR_BUTTON_LEFT |
-        LcdButton::COLOR_BUTTON_RIGHT |
-        LcdButton::COLOR_BUTTON_OK |
-        LcdButton::COLOR_BUTTON_CANCEL |
-        LcdButton::COLOR_BUTTON_UP |
-        LcdButton::COLOR_BUTTON_DOWN |
-        LcdButton::COLOR_BUTTON_MENU
+        const COLOR_BUTTON_LEFT   = 0x00000100;
+        const COLOR_BUTTON_RIGHT  = 0x00000200;
+        const COLOR_BUTTON_OK     = 0x00000400;
+        const COLOR_BUTTON_CANCEL = 0x00000800;
+        const COLOR_BUTTON_UP     = 0x00001000;
+        const COLOR_BUTTON_DOWN   = 0x00002000;
+        const COLOR_BUTTON_MENU   = 0x00004000;
+        const COLOR_BUTTON = Self::COLOR_BUTTON_LEFT.bits |
+                             Self::COLOR_BUTTON_RIGHT.bits |
+                             Self::COLOR_BUTTON_OK.bits |
+                             Self::COLOR_BUTTON_CANCEL.bits |
+                             Self::COLOR_BUTTON_UP.bits |
+                             Self::COLOR_BUTTON_DOWN.bits |
+                             Self::COLOR_BUTTON_MENU.bits;
     }
 }
 
+/// LogitechLcd library.
+///
+/// Contains library symbols/functions as fields. Will unload library when dropped.
 pub struct LogitechLcd {
+    // Main functions
     pub LogiLcdInit: unsafe extern "C" fn(friendlyName: *const u16, lcdType: c_uint) -> bool,
     pub LogiLcdIsConnected: unsafe extern "C" fn(lcdType: c_uint) -> bool,
     pub LogiLcdIsButtonPressed: unsafe extern "C" fn(button: c_uint) -> bool,
@@ -93,7 +82,7 @@ pub struct LogitechLcd {
     pub LogiLcdColorSetText: unsafe extern "C" fn(lineNumber: c_int, text: *const u16, red: c_int,
         green: c_int, blue: c_int) -> bool,
 
-    //UDK functions, use this only if working with UDK
+    // UDK functions, use this only if working with UDK
     pub LogiLcdColorSetBackgroundUDK: unsafe extern "C" fn(partialBitmap: *const u8,
         arraySize: c_int) -> c_int,
     pub LogiLcdColorResetBackgroundUDK: unsafe extern "C" fn() -> c_int,
@@ -101,7 +90,7 @@ pub struct LogitechLcd {
         arraySize: c_int) -> c_int,
     pub LogiLcdMonoResetBackgroundUDK: unsafe extern "C" fn() -> c_int,
 
-    // Library handle, free on drop
+    /// Library handle, will be freed on drop
     _library: platform::Library,
 }
 
@@ -141,7 +130,7 @@ mod platform {
 
     const ERROR_MOD_NOT_FOUND: i32 = winapi::winerror::ERROR_MOD_NOT_FOUND as i32;
 
-    // Find LogitechLcd.dll in windows registry using its CLSID
+    /// Find `LogitechLcd.dll` in Windows registry using its CLSID
     fn dll_path_clsid() -> Result<Vec<u16>, Error> {
         let hkcl = RegKey::predef(HKEY_CLASSES_ROOT);
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
@@ -233,6 +222,7 @@ mod platform {
     }
 
     impl LogitechLcd {
+        /// Try to locate and load 'LogitechLcd.dll'.
         pub fn load() -> Result<LogitechLcd, Error> {
             use std::mem;
 

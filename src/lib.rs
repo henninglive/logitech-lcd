@@ -1,7 +1,6 @@
 #![warn(missing_docs)]
 
-//! logitech-lcd provides binding for the [Logitech Gaming LCD/Gamepanel SDK]
-//! (http://gaming.logitech.com/en-us/developers).
+//! logitech-lcd provides binding for the [Logitech Gaming LCD/Gamepanel SDK](http://gaming.logitech.com/en-us/developers).
 //!
 //! ## Overview
 //! The Logitech LCD/GamePanel SDK introduces second screen capability that allows GamePanel-enabled
@@ -16,7 +15,8 @@
 //!
 //! ## Examples
 //!
-//! ### Monochrome
+//! Monochrome:
+//!
 //! ```no_run
 //! let mut lcd = logitech_lcd::Lcd::init_mono("My Glorious Monochrome App").unwrap();
 //!
@@ -28,7 +28,8 @@
 //!     std::thread::sleep(std::time::Duration::from_millis(15));
 //! }
 //! ```
-//! ### Color
+//! Color:
+//!
 //! ```no_run
 //! let mut lcd = logitech_lcd::Lcd::init_color("My Glorious Color App").unwrap();
 //!
@@ -41,7 +42,8 @@
 //!     std::thread::sleep(std::time::Duration::from_millis(15));
 //! }
 //! ```
-//! ### Monochrome and Color
+//! Monochrome and Color:
+//!
 //! ```no_run
 //! let mut lcd = logitech_lcd::Lcd::init_either("My Glorious App").unwrap();
 //!
@@ -80,9 +82,7 @@
 extern crate logitech_lcd_sys as sys;
 
 pub use sys::{
-    LcdButton, BitFlags, EnumFlagSize, InnerBitFlags,
-    MONO_WIDTH, MONO_HEIGHT, MONO_BYTES_PER_PIXEL,
-    COLOR_WIDTH, COLOR_HEIGHT, COLOR_BYTES_PER_PIXEL
+    LcdButton, MONO_WIDTH, MONO_HEIGHT, COLOR_WIDTH, COLOR_HEIGHT,
 };
 
 use std::sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT};
@@ -95,7 +95,7 @@ static INITIALIZED: AtomicBool = ATOMIC_BOOL_INIT;
 /// Initialize at start of your program. Can Be initialized with color support,
 /// monochrome support and both. Will automatically disconnect when the Lcd is dropped.
 pub struct Lcd {
-    type_flags: BitFlags<sys::LcdType>,
+    type_flags: sys::LcdType,
     lib: sys::LogitechLcd,
 }
 
@@ -179,7 +179,7 @@ fn str_to_wchar_checked(_: &str) -> Result<Vec<u16>, Error> {
 }
 
 impl Lcd {
-    fn init(app_name: &str, type_flags: BitFlags<sys::LcdType>) -> Result<Lcd, Error> {
+    fn init(app_name: &str, type_flags: sys::LcdType) -> Result<Lcd, Error> {
         assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
 
         let lib = sys::LogitechLcd::load().map_err(|e| Error::LoadLibrary(e))?;
@@ -210,43 +210,43 @@ impl Lcd {
 
     /// Initialize and connect to a monochrome lcd device.
     ///
-    /// ##### Parameters:
-    /// - **app_name**: The name of your applet.
+    /// Parameters:
+    /// - app_name: The name of your applet.
     ///
-    /// ##### Panics:
+    /// Panics:
     /// - If another Lcd instance is alive.
     ///
     pub fn init_mono(app_name: &str) -> Result<Lcd, Error>  {
-        Self::init(app_name, sys::LcdType::MONO.into())
+        Self::init(app_name, sys::LcdType::MONO)
     }
 
     /// Initialize and connect to a color lcd device.
     ///
-    /// ##### Parameters:
-    /// - **app_name**: The name of your applet.
+    /// Parameters:
+    /// - app_name: The name of your applet.
     ///
-    /// ##### Panics
+    /// Panics:
     /// - If another Lcd instance is alive.
     ///
     pub fn init_color(app_name: &str) -> Result<Lcd, Error>  {
-        Self::init(app_name, sys::LcdType::COLOR.into())
+        Self::init(app_name, sys::LcdType::COLOR)
     }
 
     /// Initialize and connect to either a monochrome or color lcd device.
     ///
-    /// ##### Parameters:
-    /// - **app_name**: The name of your applet.
+    /// Parameters:
+    /// - app_name: The name of your applet.
     ///
-    /// ##### Panics
+    /// Panics:
     /// - If another Lcd instance is alive.
     ///
     pub fn init_either(app_name: &str) -> Result<Lcd, Error> {
-        Self::init(app_name, sys::LcdType::either())
+        Self::init(app_name, sys::LcdType::EITHER)
     }
 
     /// Checks if the device is connected.
     ///
-    /// ##### Return value:
+    /// Return value:
     /// If a device supporting the lcd type specified is found, it returns `true`, otherwise `false`
     ///
     pub fn is_connected(&self) -> bool {
@@ -257,7 +257,6 @@ impl Lcd {
 
     /// Updates the lcd display.
     ///
-    /// ##### Notes:
     /// You have to call this function every frame of your main loop, to keep the lcd updated.
     ///
     pub fn update(&mut self) {
@@ -268,13 +267,10 @@ impl Lcd {
 
     /// Checks if the buttons specified by the parameter are being pressed.
     ///
-    /// ##### Return value:
     /// If the buttons specified are being pressed it returns `true`, otherwise `false`.
-    ///
-    /// ##### Notes:
     /// The button will be considered pressed only if your applet is the one currently in the foreground.
     ///
-    pub fn is_button_pressed(&self, buttons: BitFlags<LcdButton>) -> bool {
+    pub fn is_button_pressed(&self, buttons: LcdButton) -> bool {
         unsafe {
             (self.lib.LogiLcdIsButtonPressed)(buttons.bits())
         }
@@ -282,13 +278,13 @@ impl Lcd {
 
     /// Sets the specified image as background for the monochrome lcd device.
     ///
-    /// ##### Parameters:
-    /// - **mono_bitmap**: The image data is organized as a rectangular area, 160 bytes wide and 43
+    /// Parameters:
+    /// - mono_bitmap: The image data is organized as a rectangular area, 160 bytes wide and 43
     /// bytes high. Despite the display being monochrome, 8 bits per pixel are used
     /// here for simple manipulation of individual pixels. A pixel will turn on the
     /// if the value assigned to that byte is >= 128, it will remain off if the value is < 128.
     ///
-    /// ##### Panics
+    /// Panics:
     /// - If mono_bitmap's length is not 160x43 bytes.
     /// - If Lcd was initialized without mono support.
     ///
@@ -306,12 +302,12 @@ impl Lcd {
 
     /// Sets the specified text in the requested line on the monochrome lcd device.
     ///
-    /// ##### Parameters:
-    /// - **line_number**: The line on the screen you want the text to appear. The monochrome lcd display
+    /// Parameters:
+    /// - line_number: The line on the screen you want the text to appear. The monochrome lcd display
     ///   has 4 lines, so this parameter can be any number from 0 to 3.
     /// - **text**: Defines the text you want to display
     ///
-    /// ##### Panics
+    /// Panics:
     /// - If line_number larger than or equal to 4.
     /// - If Lcd was initialized without mono support.
     ///
@@ -331,17 +327,17 @@ impl Lcd {
 
     /// Sets the specified image as background for the color lcd device connected.
     ///
-    /// ##### Parameters:
-    /// - **color_bitmap**: ARGB color bitmap, full RGB gamma, 8-bit per channel,
+    /// Parameters:
+    /// - color_bitmap: ARGB color bitmap, full RGB gamma, 8-bit per channel,
     /// 320 pixels wide and 240 pixels high, 32 bits per pixel(4 bytes).
     ///
-    /// ##### Panics
+    /// Panics:
     /// - If color_bitmap's length is not 320x240x4 bytes.
     /// - If Lcd was initialized without color support.
     ///
     pub fn set_color_background(&mut self, color_bitmap: &[u8]) -> Result<(), Error> {
         assert!(!(self.type_flags | sys::LcdType::COLOR).is_empty());
-        assert_eq!(color_bitmap.len(), COLOR_WIDTH * COLOR_HEIGHT * COLOR_BYTES_PER_PIXEL);
+        assert_eq!(color_bitmap.len(), COLOR_WIDTH * COLOR_HEIGHT * 4);
 
         unsafe {
             match (self.lib.LogiLcdColorSetBackground)(color_bitmap.as_ptr()) {
@@ -355,12 +351,12 @@ impl Lcd {
     /// The font size that will be displayed is bigger than the one used in the other lines,
     /// so you can use this function to set the title of your applet/page.
     ///
-    /// ##### Parameters:
-    /// - **text**: Defines the text you want to display as title.
-    /// - **red, green, blue**: The LCD can display a full RGB color, you can define the color
+    /// Parameters:
+    /// - text: Defines the text you want to display as title.
+    /// - red, green, blue: The LCD can display a full RGB color, you can define the color
     /// of your title using these parameters.
     ///
-    /// ##### Panics
+    /// Panics:
     /// - If Lcd was initialized without color support.
     ///
     pub fn set_color_title(&mut self, text: &str, red: u8, green: u8, blue: u8)
@@ -381,14 +377,14 @@ impl Lcd {
 
     /// Sets the specified text in the requested line on the color lcd device connected.
     ///
-    /// ##### Parameters:
-    /// - **line_number**: The line on the screen you want the text to appear. The color lcd display
+    /// Parameters:
+    /// - line_number: The line on the screen you want the text to appear. The color lcd display
     /// has 8 lines, or standard text, so this parameter can be any number from 0 to 7
-    /// - **text**: Defines the text you want to display as title.
-    /// - **red, green, blue**: The LCD can display a full RGB color, you can define the color
+    /// - text: Defines the text you want to display as title.
+    /// - red, green, blue: The LCD can display a full RGB color, you can define the color
     /// of your title using these parameters.
     ///
-    /// ##### Panics
+    /// Panics:
     /// - If line_number larger than or equal to 8.
     /// - If Lcd was initialized without color support.
     ///
