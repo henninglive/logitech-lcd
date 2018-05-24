@@ -1,6 +1,6 @@
 [package]
 name = "logitech-lcd"
-version = "1.0.2"
+version = "2.0.0"
 authors = ["Henning Ottesen <henning@live.no>"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
@@ -18,7 +18,7 @@ exclude = [
 # Should be [target.'cfg(windows)'.dependencies], but that doesn't work for some reason.
 # Needs to be fixed if we want to add support for 3d party drivers on Linux or OSX.
 [dependencies]
-logitech-lcd-sys = {path = "logitech-lcd-sys", version = "1.0.4"}
+logitech-lcd-sys = {path = "logitech-lcd-sys", version = "2.0.0"}
 
 [dev-dependencies]
-image = "0.13.0"
+image = "0.13"
