@@ -1,10 +1,11 @@
-#![allow(non_camel_case_types, non_snake_case)]
-
 //! FFI bindings and loader for the Logitech LCD SDK
 //!
 //! [LogitechLcd](struct.LogitechLcd.html) will try to locate and load
-//! `LogitechLcd.dll` at Runtime for dynamic linking.
+//! `LogitechLcd.dll` at Runtime for dynamic linking. The library
+//! will be unloaded if dropped, but it is reference counted by internally
+//! Windows.
 //!
+#![allow(non_camel_case_types, non_snake_case)]
 
 #[macro_use]
 extern crate bitflags;
@@ -24,9 +25,9 @@ pub const COLOR_WIDTH:  usize = 320;
 pub const COLOR_HEIGHT: usize = 240;
 
 bitflags! {
-    /// Targeted lcd type.
+    /// Targeted device type.
     ///
-    /// This library allows you to target either Mono or Color devices
+    /// This library allows you to target either Mono or Color devices.
     pub struct LcdType: u32 {
         /// Mono color.
         const MONO =  0x00000001;
@@ -69,7 +70,8 @@ bitflags! {
 /// LogitechLcd library.
 ///
 /// Contains library symbols/functions as fields. Will unload library when dropped.
-pub struct LogitechLcd {
+#[derive(Debug)]
+pub struct Library {
     // Main functions
     pub LogiLcdInit: unsafe extern "C" fn(friendlyName: *const u16, lcdType: c_uint) -> bool,
     pub LogiLcdIsConnected: unsafe extern "C" fn(lcdType: c_uint) -> bool,
@@ -97,23 +99,30 @@ pub struct LogitechLcd {
     pub LogiLcdMonoResetBackgroundUDK: unsafe extern "C" fn() -> c_int,
 
     /// Library handle, will be freed on drop
-    _library: platform::Library,
+    _handle: platform::Handle,
 }
-
-unsafe impl std::marker::Send for LogitechLcd {}
 
 #[cfg(not(target_os = "windows"))]
 mod platform {
-    use super::LogitechLcd;
-    use std::io::Error;
+    use super::Library;
+    use std::io::{Error, ErrorKind};
+    use std::fmt;
 
-    pub struct Library;
+    pub struct Handle(*const ());
 
-    impl LogitechLcd {
-        pub fn load() -> Result<LogitechLcd, Error> {
-            unimplemented!();
+    impl Library {
+        pub fn load() -> Result<Library, Error> {
+            Err(Error::new(ErrorKind::Other, "Unsupported system"))
         }
     }
+
+    impl fmt::Debug for Handle {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fmt::Pointer::fmt(&self.0, f)
+        }
+    }
+
+    unsafe impl Send for Handle {}
 }
 
 #[cfg(target_os = "windows")]
@@ -122,7 +131,7 @@ mod platform {
     extern crate kernel32;
     extern crate winreg;
 
-    use super::LogitechLcd;
+    use super::Library;
 
     use self::winreg::RegKey;
     use self::winreg::enums::{HKEY_LOCAL_MACHINE, HKEY_CLASSES_ROOT, KEY_READ};
@@ -131,8 +140,9 @@ mod platform {
     use std::os::windows::ffi::OsStrExt;
     use std::ffi::OsStr;
     use std::io::Error;
+    use std::fmt;
 
-    pub struct Library(HMODULE);
+    pub struct Handle(HMODULE);
 
     const ERROR_MOD_NOT_FOUND: i32 = winapi::winerror::ERROR_MOD_NOT_FOUND as i32;
 
@@ -227,9 +237,9 @@ mod platform {
         }
     }
 
-    impl LogitechLcd {
+    impl Library {
         /// Try to locate and load 'LogitechLcd.dll'.
-        pub fn load() -> Result<LogitechLcd, Error> {
+        pub fn load() -> Result<Library, Error> {
             use std::mem;
 
             unsafe {
@@ -261,7 +271,7 @@ mod platform {
                     }
                 }
 
-                Ok(LogitechLcd {
+                Ok(Library {
                     LogiLcdInit:                    mem::transmute(symbols[0].1),
                     LogiLcdIsConnected:             mem::transmute(symbols[1].1),
                     LogiLcdIsButtonPressed:         mem::transmute(symbols[2].1),
@@ -276,17 +286,25 @@ mod platform {
                     LogiLcdColorResetBackgroundUDK: mem::transmute(symbols[11].1),
                     LogiLcdMonoSetBackgroundUDK:    mem::transmute(symbols[12].1),
                     LogiLcdMonoResetBackgroundUDK:  mem::transmute(symbols[13].1),
-                    _library: Library(handle),
+                    _handle: Handle(handle),
                 })
             }
         }
     }
 
-    impl Drop for Library {
+    impl fmt::Debug for Handle {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fmt::Pointer::fmt(&self.0, f)
+        }
+    }
+
+    impl Drop for Handle {
         fn drop(&mut self) {
             unsafe {
                 kernel32::FreeLibrary(self.0);
             }
         }
     }
+
+    unsafe impl Send for Handle {}
 }

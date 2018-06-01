@@ -1,5 +1,3 @@
-#![warn(missing_docs)]
-
 //! logitech-lcd provides binding for the [Logitech Gaming LCD/Gamepanel SDK](http://gaming.logitech.com/en-us/developers).
 //!
 //! ## Overview
@@ -78,6 +76,7 @@
 //! bitmap up to 60 times/second.
 //! - Use the buttons to create multiple pages or add functionality to the LCD.
 //!
+#![warn(missing_docs)]
 
 extern crate logitech_lcd_sys as sys;
 
@@ -94,9 +93,10 @@ static INITIALIZED: AtomicBool = ATOMIC_BOOL_INIT;
 ///
 /// Initialize at start of your program. Can Be initialized with color support,
 /// monochrome support and both. Will automatically disconnect when the Lcd is dropped.
+#[derive(Debug)]
 pub struct Lcd {
     type_flags: sys::LcdType,
-    lib: sys::LogitechLcd,
+    lib: sys::Library,
 }
 
 /// Runtime LCD error
@@ -180,12 +180,10 @@ fn str_to_wchar_checked(_: &str) -> Result<Vec<u16>, Error> {
 
 impl Lcd {
     fn init(app_name: &str, type_flags: sys::LcdType) -> Result<Lcd, Error> {
-        assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
-
-        let lib = sys::LogitechLcd::load().map_err(|e| Error::LoadLibrary(e))?;
-
+        let lib = sys::Library::load().map_err(|e| Error::LoadLibrary(e))?;
         let ws = str_to_wchar_checked(app_name)?;
 
+        assert_eq!(INITIALIZED.swap(true, Ordering::SeqCst), false);
         let ret = unsafe {
             match (lib.LogiLcdInit)(ws.as_ptr(), type_flags.bits()) {
                 true => {
