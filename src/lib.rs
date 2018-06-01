@@ -6,9 +6,9 @@
 //! The SDK enables integration of GamePanel functionality within your code.
 //!
 //! ## Lcd Interface
-//! The SDK interface is implemented by the [Lcd struct](struct.Lcd.html). Create a new
-//! [Lcd](struct.Lcd.html) at start of program. Update the screen with the provided methods.
-//! The [Lcd](struct.Lcd.html) will automatically disconnect when the [Lcd](struct.Lcd.html)
+//! The SDK interface is implemented by the [Driver struct](struct.Driver.html). Create a new
+//! [Driver](struct.Driver.html) at start of program. Update the screen with the provided methods.
+//! The [Driver](struct.Driver.html) will automatically disconnect when the [Driver](struct.Driver.html)
 //! is dropped.
 //!
 //! ## Examples
@@ -16,12 +16,12 @@
 //! Monochrome:
 //!
 //! ```no_run
-//! let mut lcd = logitech_lcd::Lcd::init_mono("My Glorious Monochrome App").unwrap();
+//! let mut driver = logitech_lcd::Driver::init_mono("My Glorious Monochrome App").unwrap();
 //!
 //! for i in 0..{
-//!     lcd.set_mono_text(0, &format!("update:{}", i)[..]).unwrap();
+//!     driver.set_mono_text(0, &format!("update:{}", i)[..]).unwrap();
 //!
-//!     lcd.update();
+//!     driver.update();
 //!
 //!     std::thread::sleep(std::time::Duration::from_millis(15));
 //! }
@@ -29,13 +29,13 @@
 //! Color:
 //!
 //! ```no_run
-//! let mut lcd = logitech_lcd::Lcd::init_color("My Glorious Color App").unwrap();
+//! let mut driver = logitech_lcd::Driver::init_color("My Glorious Color App").unwrap();
 //!
 //! for i in 0..{
-//!     lcd.set_color_text(0, &format!("update:{}", i)[..], i as u8,
+//!     driver.set_color_text(0, &format!("update:{}", i)[..], i as u8,
 //!         (i >> 8) as u8, (i >> 16) as u8).unwrap();
 //!
-//!     lcd.update();
+//!     driver.update();
 //!
 //!     std::thread::sleep(std::time::Duration::from_millis(15));
 //! }
@@ -43,15 +43,15 @@
 //! Monochrome and Color:
 //!
 //! ```no_run
-//! let mut lcd = logitech_lcd::Lcd::init_either("My Glorious App").unwrap();
+//! let mut driver = logitech_lcd::Driver::init_either("My Glorious App").unwrap();
 //!
 //! for i in 0..{
-//!     lcd.set_mono_text(0,  &format!("update:{}", i)[..]).unwrap();
+//!     driver.set_mono_text(0,  &format!("update:{}", i)[..]).unwrap();
 //!
-//!     lcd.set_color_text(0, &format!("update:{}", i)[..], i as u8,
+//!     driver.set_color_text(0, &format!("update:{}", i)[..], i as u8,
 //!         (i >> 8) as u8, (i >> 16) as u8).unwrap();
 //!
-//!     lcd.update();
+//!     driver.update();
 //!
 //!     std::thread::sleep(std::time::Duration::from_millis(15));
 //! }
@@ -94,7 +94,7 @@ static INITIALIZED: AtomicBool = ATOMIC_BOOL_INIT;
 /// Initialize at start of your program. Can Be initialized with color support,
 /// monochrome support and both. Will automatically disconnect when the Lcd is dropped.
 #[derive(Debug)]
-pub struct Lcd {
+pub struct Driver {
     type_flags: sys::LcdType,
     lib: sys::Library,
 }
@@ -178,8 +178,8 @@ fn str_to_wchar_checked(_: &str) -> Result<Vec<u16>, Error> {
     unimplemented!();
 }
 
-impl Lcd {
-    fn init(app_name: &str, type_flags: sys::LcdType) -> Result<Lcd, Error> {
+impl Driver {
+    fn init(app_name: &str, type_flags: sys::LcdType) -> Result<Driver, Error> {
         let lib = sys::Library::load().map_err(|e| Error::LoadLibrary(e))?;
         let ws = str_to_wchar_checked(app_name)?;
 
@@ -188,7 +188,7 @@ impl Lcd {
             match (lib.LogiLcdInit)(ws.as_ptr(), type_flags.bits()) {
                 true => {
                     match (lib.LogiLcdIsConnected)(type_flags.bits()) {
-                        true => Ok(Lcd {
+                        true => Ok(Driver {
                             type_flags: type_flags,
                             lib: lib,
                         }),
@@ -214,7 +214,7 @@ impl Lcd {
     /// Panics:
     /// - If another Lcd instance is alive.
     ///
-    pub fn init_mono(app_name: &str) -> Result<Lcd, Error>  {
+    pub fn init_mono(app_name: &str) -> Result<Driver, Error>  {
         Self::init(app_name, sys::LcdType::MONO)
     }
 
@@ -226,7 +226,7 @@ impl Lcd {
     /// Panics:
     /// - If another Lcd instance is alive.
     ///
-    pub fn init_color(app_name: &str) -> Result<Lcd, Error>  {
+    pub fn init_color(app_name: &str) -> Result<Driver, Error>  {
         Self::init(app_name, sys::LcdType::COLOR)
     }
 
@@ -238,7 +238,7 @@ impl Lcd {
     /// Panics:
     /// - If another Lcd instance is alive.
     ///
-    pub fn init_either(app_name: &str) -> Result<Lcd, Error> {
+    pub fn init_either(app_name: &str) -> Result<Driver, Error> {
         Self::init(app_name, sys::LcdType::EITHER)
     }
 
@@ -405,7 +405,7 @@ impl Lcd {
     }
 }
 
-impl Drop for Lcd {
+impl Drop for Driver {
     /// Kills the applet and frees memory used by the SDK
     fn drop(&mut self) {
         unsafe {

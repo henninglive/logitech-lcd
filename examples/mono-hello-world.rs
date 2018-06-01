@@ -1,10 +1,10 @@
 extern crate logitech_lcd;
 
 fn main() {
-    let mut lcd = logitech_lcd::Lcd::init_mono("Hello World").unwrap();
+    let mut driver = logitech_lcd::Driver::init_mono("Hello World").unwrap();
 
-    lcd.set_mono_text(1, "        Hello World!").unwrap();
-    lcd.update();
+    driver.set_mono_text(1, "        Hello World!").unwrap();
+    driver.update();
 
     std::thread::sleep(std::time::Duration::from_millis(5000));
 }

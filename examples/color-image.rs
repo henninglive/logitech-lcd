@@ -1,7 +1,7 @@
 extern crate image;
 extern crate logitech_lcd;
 
-use logitech_lcd::{Lcd, COLOR_WIDTH, COLOR_HEIGHT};
+use logitech_lcd::{Driver, COLOR_WIDTH, COLOR_HEIGHT};
 use image::{ImageFormat, ImageRgba8, Pixel, Rgba};
 
 fn load_image_into_buffer() -> Vec<u8> {
@@ -37,9 +37,9 @@ fn load_image_into_buffer() -> Vec<u8> {
 fn main() {
     let buf = load_image_into_buffer();
 
-    let mut lcd = Lcd::init_color("Color image app").unwrap();
-    lcd.set_color_background(&buf[..]).unwrap();
-    lcd.update();
+    let mut driver = Driver::init_color("Color image app").unwrap();
+    driver.set_color_background(&buf[..]).unwrap();
+    driver.update();
 
     std::thread::sleep(std::time::Duration::from_millis(10000));
 }

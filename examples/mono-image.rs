@@ -1,7 +1,7 @@
 extern crate image;
 extern crate logitech_lcd;
 
-use logitech_lcd::{Lcd, MONO_WIDTH, MONO_HEIGHT};
+use logitech_lcd::{Driver, MONO_WIDTH, MONO_HEIGHT};
 use image::{ImageFormat, ImageRgba8};
 
 fn load_image_into_buffer() -> Vec<u8> {
@@ -37,10 +37,10 @@ fn load_image_into_buffer() -> Vec<u8> {
 fn main() {
     let buf = load_image_into_buffer();
 
-    let mut lcd = Lcd::init_mono("Mono image app").unwrap();
-    lcd.set_mono_text(1, "      Rust is Awesome").unwrap();
-    lcd.set_mono_background(&buf[..]).unwrap();
-    lcd.update();
+    let mut driver = Driver::init_mono("Mono image app").unwrap();
+    driver.set_mono_text(1, "      Rust is Awesome").unwrap();
+    driver.set_mono_background(&buf[..]).unwrap();
+    driver.update();
 
     std::thread::sleep(std::time::Duration::from_millis(10000));
 }
